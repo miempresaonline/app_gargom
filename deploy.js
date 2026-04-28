@@ -18,7 +18,6 @@ conn.on('ready', () => {
     export PATH=$NODE_DIR:$PATH &&
     echo "Usando NPM en: $NPM_BIN" &&
     npm install && 
-    echo "y" | npx prisma db push --accept-data-loss &&
     npm run build && 
     npx pm2 start npm --name "gargom" -- run start -- -p 3005 || npx pm2 restart gargom
   `;

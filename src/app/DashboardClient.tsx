@@ -3,8 +3,10 @@
 import { motion } from 'framer-motion';
 import { LayoutDashboard, TrendingUp, HardHat, FileText, Activity, Users, Plus, ArrowRight } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import Link from 'next/link';
 
-export default function DashboardClient({ session }: { session: any }) {
+export default function DashboardClient({ session, data }: { session: any, data: any }) {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -12,6 +14,10 @@ export default function DashboardClient({ session }: { session: any }) {
   }, []);
 
   if (!mounted) return null;
+
+  const formatMoney = (amount: number) => {
+    return new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(amount);
+  };
 
   const container: any = {
     hidden: { opacity: 0 },
@@ -56,57 +62,108 @@ export default function DashboardClient({ session }: { session: any }) {
         </motion.header>
 
         <motion.div variants={container} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <StatCard title="Obras Activas" value="12" icon={HardHat} color="blue" delay={0.1} />
-          <StatCard title="Certificaciones" value="45.200 €" subtitle="Mes actual" icon={FileText} color="emerald" delay={0.2} />
-          <StatCard title="Gastos Pendientes" value="3.150 €" subtitle="Por abonar" icon={TrendingUp} color="rose" delay={0.3} />
-          <StatCard title="Trabajadores" value="28" icon={Users} color="indigo" delay={0.4} />
+          <StatCard title="Obras Activas" value={data.obrasCount.toString()} icon={HardHat} color="blue" delay={0.1} />
+          <StatCard title="Certificaciones" value={formatMoney(data.totalCertificaciones)} subtitle="Total emitido" icon={FileText} color="emerald" delay={0.2} />
+          <StatCard title="Gastos Totales" value={formatMoney(data.totalGastos)} subtitle="Registrados" icon={TrendingUp} color="rose" delay={0.3} />
+          <StatCard title="Trabajadores" value={data.trabajadoresCount.toString()} icon={Users} color="indigo" delay={0.4} />
         </motion.div>
 
         <motion.div variants={container} className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <motion.div variants={item} className="lg:col-span-2 bg-white/70 backdrop-blur-xl border border-white rounded-3xl p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] relative overflow-hidden group hover:border-blue-100 transition-colors">
             <div className="flex justify-between items-center mb-8">
               <h2 className="text-xl font-bold text-slate-800">Evolución de Gastos</h2>
-              <button className="text-sm font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1 group/link">
+              <Link href="/gastos" className="text-sm font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1 group/link">
                 Ver detalle <ArrowRight size={16} className="group-hover/link:translate-x-1 transition-transform" />
-              </button>
+              </Link>
             </div>
-            <div className="h-[320px] flex flex-col items-center justify-center text-slate-400 bg-gradient-to-b from-slate-50/50 to-slate-100/50 rounded-2xl border border-dashed border-slate-200/60 gap-4 group-hover:border-blue-200/60 transition-colors">
-              <div className="w-16 h-16 rounded-2xl bg-white shadow-sm flex items-center justify-center text-slate-300 group-hover:text-blue-400 transition-colors">
-                <TrendingUp size={32} />
-              </div>
-              <p className="text-sm font-medium">El gráfico interactivo se generará al conectar los datos reales.</p>
+            <div className="h-[320px] w-full">
+              {data.chartData && data.chartData.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={data.chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="colorGastos" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
+                        <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                      </linearGradient>
+                    </defs>
+                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 12}} dy={10} />
+                    <YAxis axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 12}} tickFormatter={(value) => `${value}€`} />
+                    <Tooltip 
+                      contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)' }}
+                      formatter={(value: any) => [formatMoney(value), 'Gastos']}
+                    />
+                    <Area type="monotone" dataKey="gastos" stroke="#3b82f6" strokeWidth={3} fillOpacity={1} fill="url(#colorGastos)" />
+                  </AreaChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-full flex flex-col items-center justify-center text-slate-400 bg-gradient-to-b from-slate-50/50 to-slate-100/50 rounded-2xl border border-dashed border-slate-200/60">
+                  <Activity size={32} className="mb-2 text-slate-300" />
+                  <p className="text-sm font-medium">No hay datos suficientes para el gráfico.</p>
+                </div>
+              )}
             </div>
           </motion.div>
           
-          <motion.div variants={item} className="bg-white/70 backdrop-blur-xl border border-white rounded-3xl p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] relative overflow-hidden group hover:border-indigo-100 transition-colors">
-            <div className="flex justify-between items-center mb-8">
-              <h2 className="text-xl font-bold text-slate-800">Obras Destacadas</h2>
-              <button className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition-colors">
+          <motion.div variants={item} className="bg-white/70 backdrop-blur-xl border border-white rounded-3xl p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] relative overflow-hidden group hover:border-indigo-100 transition-colors flex flex-col">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-bold text-slate-800">Últimas Obras</h2>
+              <Link href="/obras" className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition-colors">
                 <Plus size={18} />
-              </button>
+              </Link>
             </div>
-            <div className="space-y-4">
-              {[1, 2, 3, 4].map((i) => (
-                <div key={i} className="flex items-center gap-4 p-4 hover:bg-white rounded-2xl transition-all cursor-pointer border border-transparent hover:border-slate-100 hover:shadow-[0_4px_20px_rgb(0,0,0,0.03)] group/item">
-                  <div className="w-12 h-12 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-500 group-hover/item:text-blue-600 group-hover/item:bg-blue-50 group-hover/item:border-blue-100 transition-colors shadow-sm">
-                    <HardHat size={20} />
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex justify-between items-center mb-2">
-                      <p className="font-bold text-sm text-slate-700">Residencial Fase {i}</p>
-                      <span className="text-xs font-bold text-slate-400">{30 + i * 15}%</span>
+            
+            <div className="space-y-4 flex-1">
+              {data.obrasDestacadas && data.obrasDestacadas.length > 0 ? (
+                data.obrasDestacadas.map((obra: any, i: number) => (
+                  <Link href={`/obras`} key={obra.id} className="flex items-center gap-4 p-4 hover:bg-white rounded-2xl transition-all cursor-pointer border border-transparent hover:border-slate-100 hover:shadow-[0_4px_20px_rgb(0,0,0,0.03)] group/item">
+                    <div className="w-12 h-12 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-500 group-hover/item:text-blue-600 group-hover/item:bg-blue-50 group-hover/item:border-blue-100 transition-colors shadow-sm shrink-0">
+                      <HardHat size={20} />
                     </div>
-                    <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                      <motion.div 
-                        initial={{ width: 0 }}
-                        animate={{ width: `${30 + i * 15}%` }}
-                        transition={{ duration: 1, delay: 0.5 + i * 0.1 }}
-                        className="bg-gradient-to-r from-blue-500 to-indigo-500 h-full rounded-full"
-                      />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex justify-between items-center mb-1">
+                        <p className="font-bold text-sm text-slate-700 truncate mr-2">{obra.cliente}</p>
+                        <span className="text-xs font-bold text-slate-400 whitespace-nowrap">{formatMoney(obra.presupuestoTotal)}</span>
+                      </div>
+                      <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden mt-2">
+                        <motion.div 
+                          initial={{ width: 0 }}
+                          animate={{ width: `${Math.min(100, 30 + i * 20)}%` }}
+                          transition={{ duration: 1, delay: 0.5 + i * 0.1 }}
+                          className="bg-gradient-to-r from-blue-500 to-indigo-500 h-full rounded-full"
+                        />
+                      </div>
                     </div>
-                  </div>
+                  </Link>
+                ))
+              ) : (
+                <div className="h-full flex items-center justify-center text-slate-400 text-sm">
+                  No hay obras registradas
                 </div>
-              ))}
+              )}
+            </div>
+            
+            {/* Gastos Distribution (Mini view) */}
+            <div className="mt-8 pt-6 border-t border-slate-100">
+              <h3 className="text-sm font-bold text-slate-800 mb-4">Distribución de Gastos</h3>
+              <div className="space-y-3">
+                {Object.entries(data.gastosPorTipo).map(([tipo, amount]: [string, any]) => (
+                  <div key={tipo} className="flex justify-between items-center text-sm">
+                    <div className="flex items-center gap-2">
+                      <div className={`w-2 h-2 rounded-full ${
+                        tipo === 'PERSONAL' ? 'bg-green-500' : 
+                        tipo === 'GENERAL' ? 'bg-purple-500' : 
+                        tipo === 'MATERIALES' ? 'bg-blue-500' : 
+                        'bg-orange-500'
+                      }`} />
+                      <span className="text-slate-600 capitalize">{tipo.toLowerCase()}</span>
+                    </div>
+                    <span className="font-semibold text-slate-800">{formatMoney(amount)}</span>
+                  </div>
+                ))}
+                {Object.keys(data.gastosPorTipo).length === 0 && (
+                   <div className="text-center text-slate-400 text-xs">Sin gastos</div>
+                )}
+              </div>
             </div>
           </motion.div>
         </motion.div>

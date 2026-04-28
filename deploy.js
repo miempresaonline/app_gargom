@@ -13,6 +13,8 @@ conn.on('ready', () => {
     git remote add origin https://github.com/miempresaonline/app_gargom.git &&
     git fetch --all -f &&
     git reset --hard origin/main &&
+    echo "DATABASE_URL=\\"mysql://construccionesgargom_uznwurhbl1n:N6OxTjc2t\\$l\\&qdg7@127.0.0.1:3306/construccionesgargom_db_0iow2\\"" > .env &&
+    echo "JWT_SECRET_KEY=\\"f3b9c7d4e1a2b5c6d9e0f3b9c7d4e1a2\\"" >> .env &&
     NPM_BIN=$(ls /opt/plesk/node/22*/bin/npm | sort -V | tail -n 1) &&
     NODE_DIR=$(dirname $NPM_BIN) &&
     export PATH=$NODE_DIR:$PATH &&

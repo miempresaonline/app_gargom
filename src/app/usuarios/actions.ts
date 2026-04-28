@@ -40,3 +40,30 @@ export async function createUser(prevState: any, formData: FormData) {
     return { error: 'Error al crear el usuario' };
   }
 }
+
+export async function updateUser(id: number, nombre: string) {
+  try {
+    await prisma.user.update({
+      where: { id },
+      data: { nombre },
+    });
+    revalidatePath('/usuarios');
+    return { success: true };
+  } catch (error) {
+    console.error('Update user error:', error);
+    return { error: 'Error al actualizar el usuario' };
+  }
+}
+
+export async function deleteUser(id: number) {
+  try {
+    await prisma.user.delete({
+      where: { id },
+    });
+    revalidatePath('/usuarios');
+    return { success: true };
+  } catch (error) {
+    console.error('Delete user error:', error);
+    return { error: 'Error al eliminar el usuario' };
+  }
+}

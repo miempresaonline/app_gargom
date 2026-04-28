@@ -55,7 +55,6 @@ export default function LoginPage() {
                 <input
                   type="email"
                   name="email"
-                  defaultValue="dpenuelaruiz7@gmail.com"
                   className="w-full pl-11 pr-4 py-3.5 bg-white/50 border border-slate-200/80 rounded-2xl text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-gargom-accent/50 focus:border-gargom-accent/50 transition-all shadow-sm"
                   placeholder="usuario@gargom.es"
                   required
@@ -72,7 +71,6 @@ export default function LoginPage() {
                 <input
                   type="password"
                   name="password"
-                  defaultValue="aaaaaa"
                   className="w-full pl-11 pr-4 py-3.5 bg-white/50 border border-slate-200/80 rounded-2xl text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-gargom-accent/50 focus:border-gargom-accent/50 transition-all shadow-sm"
                   placeholder="••••••••"
                   required

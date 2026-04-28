@@ -24,7 +24,7 @@ export default async function Sidebar() {
       
       <div className="flex items-center justify-center h-24 px-6 border-b border-white/10 relative z-10">
         <Image 
-          src="/imagenes/logo_gargom_dark_bg.png" 
+          src="/logo_gargom.png" 
           alt="Gargom Logo" 
           width={180} 
           height={60} 

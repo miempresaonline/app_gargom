@@ -19,6 +19,9 @@ conn.on('ready', () => {
     echo "Usando NPM en: $NPM_BIN" &&
     npm install && 
     ln -sfn public/imagenes imagenes &&
+    npx prisma generate &&
+    npx prisma db push --accept-data-loss &&
+    node seed.js &&
     npm run build && 
     npx pm2 start npm --name "gargom" -- run start -- -p 3005 || npx pm2 restart gargom
   `;

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import Sidebar from "@/components/Sidebar";
+import LayoutWrapper from "@/components/LayoutWrapper";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -18,10 +19,9 @@ export default function RootLayout({
   return (
     <html lang="es">
       <body className={`${inter.className} bg-gargom-bg text-gargom-text min-h-screen flex`}>
-        <Sidebar />
-        <main className="flex-1 ml-64 p-8 min-h-screen">
+        <LayoutWrapper sidebar={<Sidebar />}>
           {children}
-        </main>
+        </LayoutWrapper>
       </body>
     </html>
   );

@@ -17,7 +17,7 @@ conn.on('ready', () => {
     NODE_DIR=$(dirname $NPM_BIN) &&
     export PATH=$NODE_DIR:$PATH &&
     echo "Usando NPM en: $NPM_BIN" &&
-    npm install && 
+    npm install &&
     ln -sfn public/imagenes imagenes &&
     npx prisma generate &&
     npx prisma db push --accept-data-loss &&

@@ -63,7 +63,7 @@ export default function UsuariosClient({ initialUsers }: { initialUsers: any[] }
     if (!createdUser) return;
     const subject = encodeURIComponent('Acceso a Gargom ERP');
     const body = encodeURIComponent(`Hola,\n\nSe ha creado tu cuenta en Gargom ERP.\n\nUsuario: ${createdUser.email}\nContraseña: ${createdUser.pass}\n\nAccede en: https://app.construccionesgargom.es`);
-    window.open(`mailto:?subject=${subject}&body=${body}`);
+    window.open(`mailto:${createdUser.email}?subject=${subject}&body=${body}`);
   };
 
   const handleSaveEdit = async (id: number) => {

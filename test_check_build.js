@@ -6,7 +6,10 @@ conn.on('ready', () => {
   
   const cmd = `
     cd /var/www/vhosts/construccionesgargom.es/app.construccionesgargom.es &&
-    cat src/app/DashboardClient.tsx | head -n 5 || echo "Not found"
+    NPM_BIN=$(ls /opt/plesk/node/22*/bin/npm | sort -V | tail -n 1) &&
+    NODE_DIR=$(dirname $NPM_BIN) &&
+    export PATH=$NODE_DIR:$PATH &&
+    npm run build
   `;
   
   conn.exec(cmd, (err, stream) => {

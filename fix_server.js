@@ -14,13 +14,11 @@ conn.on('ready', () => {
     echo "Pulling latest code..." &&
     git fetch --all -f &&
     git reset --hard origin/main &&
-    echo "Deleting all PM2 apps..." &&
+    echo "Stopping all PM2 apps..." &&
+    npx pm2 stop all &&
     npx pm2 delete all &&
     echo "Killing remaining node processes..." &&
     killall node || true &&
-    echo "Clearing Next.js cache and rebuilding..." &&
-    rm -rf .next &&
-    npm run build &&
     echo "Starting PM2..." &&
     npx pm2 start npm --name "gargom" -- run start -- -p 3005 &&
     npx pm2 save

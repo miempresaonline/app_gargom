@@ -55,84 +55,102 @@ export default function PersonalClient({ initialWorkers }: { initialWorkers: any
       </div>
 
       {/* Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
         <AnimatePresence>
           {initialWorkers.map((worker, index) => (
             <motion.div
               key={worker.id}
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9 }}
               transition={{ delay: index * 0.05 }}
-              className="bg-white/70 backdrop-blur-xl border border-white shadow-xl shadow-gargom-blue/5 rounded-3xl p-6 relative overflow-hidden group hover:border-gargom-accent/30 transition-colors"
+              className="bg-white rounded-[20px] shadow-xl shadow-slate-200/50 overflow-hidden relative group border border-slate-100 flex flex-col"
             >
-              <div className="absolute top-0 right-0 w-32 h-32 bg-gargom-blue/5 rounded-bl-[100px] -mr-8 -mt-8 transition-transform group-hover:scale-110" />
-              
-              <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-20">
+              {/* Badge Clip Hole */}
+              <div className="absolute top-0 inset-x-0 flex justify-center mt-3 z-20">
+                <div className="w-16 h-3 bg-slate-100 rounded-full shadow-inner border border-slate-200/50"></div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="absolute top-8 right-2 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-20">
                 {editingId === worker.id ? (
-                  <button onClick={() => handleSaveEdit(worker.id)} disabled={isUpdating} className="p-2 bg-gargom-accent text-white rounded-lg hover:bg-blue-600 transition">
-                    {isUpdating ? <Loader2 size={16} className="animate-spin" /> : <User size={16} />}
+                  <button onClick={() => handleSaveEdit(worker.id)} disabled={isUpdating} className="p-2 bg-gargom-accent text-white rounded-full hover:bg-blue-600 transition shadow-lg">
+                    {isUpdating ? <Loader2 size={14} className="animate-spin" /> : <User size={14} />}
                   </button>
                 ) : (
-                  <button onClick={() => { setEditingId(worker.id); setEditNombre(worker.nombre); setEditCargo(worker.cargo); setEditPrecioHora(worker.precioHora); }} className="p-2 bg-white text-slate-500 rounded-lg shadow hover:text-gargom-accent transition">
-                    <Edit2 size={16} />
+                  <button onClick={() => { setEditingId(worker.id); setEditNombre(worker.nombre); setEditCargo(worker.cargo); setEditPrecioHora(worker.precioHora); }} className="p-2 bg-white text-slate-500 rounded-full shadow-lg border border-slate-100 hover:text-gargom-accent transition">
+                    <Edit2 size={14} />
                   </button>
                 )}
-                <button onClick={() => handleDelete(worker.id)} disabled={isDeleting === worker.id} className="p-2 bg-white text-slate-500 rounded-lg shadow hover:text-red-500 transition">
-                  {isDeleting === worker.id ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
+                <button onClick={() => handleDelete(worker.id)} disabled={isDeleting === worker.id} className="p-2 bg-white text-slate-500 rounded-full shadow-lg border border-slate-100 hover:text-red-500 transition">
+                  {isDeleting === worker.id ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
                 </button>
               </div>
 
-              <div className="flex items-center gap-4 mb-6 relative z-10">
-                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-gargom-blue to-gargom-accent flex items-center justify-center text-white font-bold text-xl shadow-lg">
-                  {worker.nombre.charAt(0).toUpperCase()}
+              {/* Card Header Profile */}
+              <div className="bg-gradient-to-b from-gargom-blue to-[#0a1e4a] pt-12 pb-6 px-4 flex flex-col items-center relative text-center">
+                <div className="w-20 h-20 bg-white p-1 rounded-full shadow-lg mb-3">
+                  <div className="w-full h-full bg-slate-100 rounded-full flex items-center justify-center text-gargom-blue font-bold text-3xl overflow-hidden relative">
+                    {worker.nombre.charAt(0).toUpperCase()}
+                    <div className="absolute inset-0 bg-gradient-to-tr from-black/5 to-transparent"></div>
+                  </div>
                 </div>
-                <div className="flex-1 pr-10">
-                  {editingId === worker.id ? (
-                    <input 
-                      autoFocus
-                      type="text" 
-                      value={editNombre} 
-                      onChange={e => setEditNombre(e.target.value)}
-                      className="font-bold text-lg text-gargom-blue border-b-2 border-gargom-accent focus:outline-none bg-transparent w-full"
-                    />
-                  ) : (
-                    <h3 className="font-bold text-lg text-gargom-blue truncate">{worker.nombre}</h3>
-                  )}
-                </div>
+                
+                {editingId === worker.id ? (
+                  <input 
+                    autoFocus
+                    type="text" 
+                    value={editNombre} 
+                    onChange={e => setEditNombre(e.target.value)}
+                    className="font-bold text-lg text-white border-b-2 border-white/50 focus:outline-none bg-transparent text-center w-full"
+                  />
+                ) : (
+                  <h3 className="font-bold text-lg text-white truncate w-full px-2">{worker.nombre}</h3>
+                )}
               </div>
 
-              <div className="space-y-3 relative z-10">
-                <div className="flex items-center gap-3 text-sm text-slate-600">
-                  <Briefcase size={16} className="text-slate-400" />
+              {/* Card Body */}
+              <div className="p-5 flex-1 flex flex-col items-center justify-center space-y-4 bg-slate-50">
+                <div className="text-center w-full">
+                  <span className="text-xs font-bold tracking-widest text-slate-400 uppercase block mb-1">Cargo</span>
                   {editingId === worker.id ? (
                     <input 
                       type="text" 
                       value={editCargo} 
                       onChange={e => setEditCargo(e.target.value)}
-                      className="border-b border-gargom-accent focus:outline-none bg-transparent w-full"
+                      className="border-b border-slate-300 focus:outline-none bg-transparent w-full text-center font-medium text-slate-700"
                     />
                   ) : (
-                    <span className="truncate font-medium">{worker.cargo}</span>
+                    <div className="font-semibold text-slate-700 truncate px-2">{worker.cargo}</div>
                   )}
                 </div>
-                <div className="flex items-center gap-3 text-sm text-slate-600">
-                  <DollarSign size={16} className="text-slate-400" />
+
+                <div className="w-8 h-px bg-slate-200"></div>
+
+                <div className="text-center w-full">
+                  <span className="text-xs font-bold tracking-widest text-slate-400 uppercase block mb-1">Tarifa</span>
                   {editingId === worker.id ? (
-                    <div className="flex items-center">
+                    <div className="flex items-center justify-center text-slate-700 font-medium">
                       <input 
                         type="number" 
                         step="0.01"
                         value={editPrecioHora} 
                         onChange={e => setEditPrecioHora(parseFloat(e.target.value))}
-                        className="border-b border-gargom-accent focus:outline-none bg-transparent w-20"
+                        className="border-b border-slate-300 focus:outline-none bg-transparent w-16 text-center"
                       />
-                      <span className="ml-1">€ / hora</span>
+                      <span className="ml-1 text-sm text-slate-500">€/h</span>
                     </div>
                   ) : (
-                    <span className="font-bold text-gargom-accent">{worker.precioHora.toFixed(2)} € <span className="text-slate-400 font-normal">/ hora</span></span>
+                    <div className="font-bold text-gargom-accent text-lg">{worker.precioHora.toFixed(2)} €<span className="text-xs text-slate-400 font-normal">/h</span></div>
                   )}
                 </div>
+              </div>
+
+              {/* Barcode Footer */}
+              <div className="h-10 bg-white border-t border-slate-100 flex items-center justify-center gap-1 opacity-20 overflow-hidden px-4">
+                {Array.from({ length: 30 }).map((_, i) => (
+                  <div key={i} className="bg-slate-800 h-6" style={{ width: `${Math.random() * 4 + 1}px` }}></div>
+                ))}
               </div>
             </motion.div>
           ))}

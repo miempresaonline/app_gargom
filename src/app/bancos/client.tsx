@@ -59,13 +59,15 @@ export default function BancosClient({ initialBancos }: { initialBancos: any[] }
           {initialBancos.map((banco, index) => (
             <motion.div
               key={banco.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.9 }}
               transition={{ delay: index * 0.05 }}
-              className="bg-white/70 backdrop-blur-xl border border-white shadow-xl shadow-gargom-blue/5 rounded-3xl p-6 relative overflow-hidden group hover:border-gargom-accent/30 transition-colors"
+              className="bg-gradient-to-br from-slate-900 to-slate-800 text-white rounded-[24px] p-6 relative overflow-hidden group shadow-2xl shadow-slate-900/20 aspect-[1.6/1] flex flex-col justify-between"
             >
-              <div className="absolute top-0 right-0 w-32 h-32 bg-gargom-blue/5 rounded-bl-[100px] -mr-8 -mt-8 transition-transform group-hover:scale-110" />
+              {/* Card Decoratives */}
+              <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -mr-20 -mt-20 blur-2xl" />
+              <div className="absolute bottom-0 left-0 w-40 h-40 bg-gargom-accent/20 rounded-full -ml-10 -mb-10 blur-2xl" />
               
               <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-20">
                 {editingId === banco.id ? (
@@ -73,48 +75,61 @@ export default function BancosClient({ initialBancos }: { initialBancos: any[] }
                     {isUpdating ? <Loader2 size={16} className="animate-spin" /> : <Landmark size={16} />}
                   </button>
                 ) : (
-                  <button onClick={() => { setEditingId(banco.id); setEditNombre(banco.nombre); setEditCuenta(banco.numeroCuenta); }} className="p-2 bg-white text-slate-500 rounded-lg shadow hover:text-gargom-accent transition">
+                  <button onClick={() => { setEditingId(banco.id); setEditNombre(banco.nombre); setEditCuenta(banco.numeroCuenta); }} className="p-2 bg-white/10 backdrop-blur-md text-white rounded-lg shadow hover:bg-white/20 transition">
                     <Edit2 size={16} />
                   </button>
                 )}
-                <button onClick={() => handleDelete(banco.id)} disabled={isDeleting === banco.id} className="p-2 bg-white text-slate-500 rounded-lg shadow hover:text-red-500 transition">
+                <button onClick={() => handleDelete(banco.id)} disabled={isDeleting === banco.id} className="p-2 bg-white/10 backdrop-blur-md text-white rounded-lg shadow hover:bg-red-500/80 transition">
                   {isDeleting === banco.id ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
                 </button>
               </div>
 
-              <div className="flex items-center gap-4 mb-6 relative z-10">
-                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-gargom-blue to-gargom-accent flex items-center justify-center text-white font-bold text-xl shadow-lg">
-                  {banco.nombre.charAt(0).toUpperCase()}
+              {/* Card Top */}
+              <div className="flex items-start justify-between relative z-10">
+                <div className="w-12 h-8 bg-yellow-400/80 rounded border border-yellow-300/50 flex items-center justify-center opacity-80 shadow-inner">
+                  <div className="w-8 h-4 border border-yellow-600/30 rounded-sm grid grid-cols-3 gap-0.5">
+                    <div className="border-r border-b border-yellow-600/20"></div>
+                    <div className="border-r border-b border-yellow-600/20"></div>
+                    <div className="border-b border-yellow-600/20"></div>
+                  </div>
                 </div>
-                <div className="flex-1 pr-10">
+                
+                <div className="text-right">
                   {editingId === banco.id ? (
                     <input 
                       autoFocus
                       type="text" 
                       value={editNombre} 
                       onChange={e => setEditNombre(e.target.value)}
-                      className="font-bold text-lg text-gargom-blue border-b-2 border-gargom-accent focus:outline-none bg-transparent w-full"
+                      className="font-bold text-lg text-white border-b-2 border-white/50 focus:outline-none bg-transparent text-right w-full"
                     />
                   ) : (
-                    <h3 className="font-bold text-lg text-gargom-blue truncate">{banco.nombre}</h3>
+                    <h3 className="font-bold text-xl tracking-wider uppercase opacity-90">{banco.nombre}</h3>
                   )}
                 </div>
               </div>
 
-              <div className="space-y-3 relative z-10">
-                <div className="flex items-center gap-3 text-sm text-slate-600">
-                  <Hash size={16} className="text-slate-400" />
-                  {editingId === banco.id ? (
-                    <input 
-                      type="text" 
-                      value={editCuenta} 
-                      onChange={e => setEditCuenta(e.target.value)}
-                      className="border-b border-gargom-accent focus:outline-none bg-transparent w-full font-mono"
-                    />
-                  ) : (
-                    <span className="truncate font-mono font-medium">{banco.numeroCuenta}</span>
-                  )}
-                </div>
+              {/* Card Number (IBAN) */}
+              <div className="relative z-10 mt-auto mb-6">
+                {editingId === banco.id ? (
+                  <input 
+                    type="text" 
+                    value={editCuenta} 
+                    onChange={e => setEditCuenta(e.target.value)}
+                    className="border-b border-white/50 focus:outline-none bg-transparent w-full font-mono text-xl tracking-widest uppercase"
+                  />
+                ) : (
+                  <div className="font-mono text-lg md:text-xl tracking-[0.2em] uppercase text-white/90 drop-shadow-md">
+                    {/* Format IBAN in groups of 4 if possible */}
+                    {banco.numeroCuenta.replace(/(.{4})/g, '$1 ').trim()}
+                  </div>
+                )}
+              </div>
+
+              {/* Card Bottom */}
+              <div className="flex items-end justify-between relative z-10 opacity-60 font-mono text-xs uppercase tracking-widest">
+                <span>IBAN / CUENTA</span>
+                <Landmark size={24} className="opacity-50" />
               </div>
             </motion.div>
           ))}

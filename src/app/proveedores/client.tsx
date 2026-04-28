@@ -63,9 +63,10 @@ export default function ProveedoresClient({ initialProveedores }: { initialProve
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9 }}
               transition={{ delay: index * 0.05 }}
-              className="bg-white/70 backdrop-blur-xl border border-white shadow-xl shadow-gargom-blue/5 rounded-3xl p-6 relative overflow-hidden group hover:border-gargom-accent/30 transition-colors"
+              className="bg-[#fdfbf7] border-l-8 border-gargom-blue shadow-md hover:shadow-xl rounded-r-2xl rounded-l-md p-6 relative overflow-hidden group transition-all"
             >
-              <div className="absolute top-0 right-0 w-32 h-32 bg-gargom-blue/5 rounded-bl-[100px] -mr-8 -mt-8 transition-transform group-hover:scale-110" />
+              {/* Paper Texture / Watermark */}
+              <div className="absolute inset-0 opacity-[0.03] bg-[radial-gradient(#000_1px,transparent_1px)] [background-size:16px_16px] pointer-events-none"></div>
               
               <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-20">
                 {editingId === proveedor.id ? (
@@ -73,47 +74,48 @@ export default function ProveedoresClient({ initialProveedores }: { initialProve
                     {isUpdating ? <Loader2 size={16} className="animate-spin" /> : <Building2 size={16} />}
                   </button>
                 ) : (
-                  <button onClick={() => { setEditingId(proveedor.id); setEditNombre(proveedor.nombre); setEditCorreo(proveedor.correo || ''); }} className="p-2 bg-white text-slate-500 rounded-lg shadow hover:text-gargom-accent transition">
+                  <button onClick={() => { setEditingId(proveedor.id); setEditNombre(proveedor.nombre); setEditCorreo(proveedor.correo || ''); }} className="p-2 bg-white text-slate-500 rounded-lg shadow hover:text-gargom-accent transition border border-slate-200">
                     <Edit2 size={16} />
                   </button>
                 )}
-                <button onClick={() => handleDelete(proveedor.id)} disabled={isDeleting === proveedor.id} className="p-2 bg-white text-slate-500 rounded-lg shadow hover:text-red-500 transition">
+                <button onClick={() => handleDelete(proveedor.id)} disabled={isDeleting === proveedor.id} className="p-2 bg-white text-slate-500 rounded-lg shadow hover:text-red-500 transition border border-slate-200">
                   {isDeleting === proveedor.id ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
                 </button>
               </div>
 
-              <div className="flex items-center gap-4 mb-6 relative z-10">
-                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-gargom-blue to-gargom-accent flex items-center justify-center text-white font-bold text-xl shadow-lg">
-                  {proveedor.nombre.charAt(0).toUpperCase()}
-                </div>
-                <div className="flex-1 pr-10">
+              <div className="flex flex-col h-full relative z-10 space-y-6">
+                <div>
+                  <div className="w-12 h-12 rounded-xl bg-gargom-blue/10 text-gargom-blue flex items-center justify-center font-bold text-xl mb-4">
+                    <Building2 size={24} />
+                  </div>
                   {editingId === proveedor.id ? (
                     <input 
                       autoFocus
                       type="text" 
                       value={editNombre} 
                       onChange={e => setEditNombre(e.target.value)}
-                      className="font-bold text-lg text-gargom-blue border-b-2 border-gargom-accent focus:outline-none bg-transparent w-full"
+                      className="font-bold text-xl text-gargom-blue border-b-2 border-gargom-accent focus:outline-none bg-transparent w-full uppercase tracking-wide"
                     />
                   ) : (
-                    <h3 className="font-bold text-lg text-gargom-blue truncate">{proveedor.nombre}</h3>
+                    <h3 className="font-bold text-xl text-gargom-blue truncate uppercase tracking-wide">{proveedor.nombre}</h3>
                   )}
+                  <div className="h-px w-12 bg-gargom-accent mt-2"></div>
                 </div>
-              </div>
 
-              <div className="space-y-3 relative z-10">
-                <div className="flex items-center gap-3 text-sm text-slate-600">
-                  <Mail size={16} className="text-slate-400" />
-                  {editingId === proveedor.id ? (
-                    <input 
-                      type="email" 
-                      value={editCorreo} 
-                      onChange={e => setEditCorreo(e.target.value)}
-                      className="border-b border-gargom-accent focus:outline-none bg-transparent w-full"
-                    />
-                  ) : (
-                    <span className="truncate font-medium">{proveedor.correo || 'Sin correo'}</span>
-                  )}
+                <div className="mt-auto">
+                  <div className="flex items-center gap-3 text-sm text-slate-600 bg-white p-3 rounded-lg border border-slate-100 shadow-sm">
+                    <Mail size={16} className="text-gargom-accent flex-shrink-0" />
+                    {editingId === proveedor.id ? (
+                      <input 
+                        type="email" 
+                        value={editCorreo} 
+                        onChange={e => setEditCorreo(e.target.value)}
+                        className="border-b border-gargom-accent focus:outline-none bg-transparent w-full"
+                      />
+                    ) : (
+                      <span className="truncate font-medium">{proveedor.correo || 'Sin correo registrado'}</span>
+                    )}
+                  </div>
                 </div>
               </div>
             </motion.div>

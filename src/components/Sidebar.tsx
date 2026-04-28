@@ -5,7 +5,7 @@ import LogoutButton from './LogoutButton';
 import { getSession } from '@/lib/auth';
 
 export default async function Sidebar() {
-  const session = await getSession();
+  const session = await getSession() as any;
   
   const menuItems = [
     { name: 'Panel Principal', icon: LayoutDashboard, href: '/' },

@@ -1,4 +1,0 @@
-PassengerEnabled off
-
-RewriteEngine On
-RewriteRule ^(.*)$ http://127.0.0.1:3005%{REQUEST_URI} [P,L]

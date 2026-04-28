@@ -1,27 +1,35 @@
-const { createServer } = require('http')
-const { parse } = require('url')
-const next = require('next')
+process.env.NODE_ENV = 'production';
+const path = require('path');
+const http = require('http');
 
-const dev = process.env.NODE_ENV !== 'production'
-const hostname = 'localhost'
-const port = process.env.PORT || 3000
+// Next.js server requires required-server-files.json
+let conf = {};
+try {
+  conf = require('./.next/required-server-files.json').config;
+} catch (e) {
+  console.error('Could not load required-server-files.json. Ensure you have run "npm run build".');
+}
 
-// Initialize the Next.js app
-const app = next({ dev, hostname, port })
-const handle = app.getRequestHandler()
+const NextServer = require('next/dist/server/next-server').default;
 
-app.prepare().then(() => {
-  createServer(async (req, res) => {
-    try {
-      const parsedUrl = parse(req.url, true)
-      await handle(req, res, parsedUrl)
-    } catch (err) {
-      console.error('Error occurred handling', req.url, err)
-      res.statusCode = 500
-      res.end('internal server error')
-    }
-  }).listen(port, (err) => {
-    if (err) throw err
-    console.log(`> Ready on http://${hostname}:${port}`)
-  })
-})
+const app = new NextServer({
+  hostname: 'localhost',
+  port: process.env.PORT || 3000,
+  dir: __dirname,
+  dev: false,
+  conf,
+});
+
+const handler = app.getRequestHandler();
+
+const server = http.createServer((req, res) => {
+  handler(req, res).catch((err) => {
+    console.error(err);
+    res.statusCode = 500;
+    res.end('Internal Server Error');
+  });
+});
+
+server.listen(process.env.PORT || 3000, () => {
+  console.log(`> Ready on http://localhost:${process.env.PORT || 3000}`);
+});

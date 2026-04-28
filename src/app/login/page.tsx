@@ -40,9 +40,9 @@ export default function LoginPage() {
           <div className="text-center mb-10">
             <div className="flex justify-center mb-6">
               <img 
-                src="/logo_claro.png" 
+                src="https://ltukyxwcvivaiuqaxlgo.supabase.co/storage/v1/object/sign/COSAS/gargom/logo_gargom_png_transparente_fondos_claros%20(1).png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV83Y2FiZGYxMy0yNDVkLTQ2ZWUtYjFjNy0xM2Q3MGIwNTg5NDMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJDT1NBUy9nYXJnb20vbG9nb19nYXJnb21fcG5nX3RyYW5zcGFyZW50ZV9mb25kb3NfY2xhcm9zICgxKS5wbmciLCJpYXQiOjE3Nzc0MTM5MzEsImV4cCI6MTgwODk0OTkzMX0.DSR-3st04yu-p1jHlw_EmZ4VuhAt2tlybp7Rl0h5DLg" 
                 alt="Gargom Logo" 
-                className="h-20 w-auto object-contain drop-shadow-md"
+                className="h-24 w-auto object-contain drop-shadow-md"
               />
             </div>
             <h1 className="text-3xl font-bold text-gargom-blue tracking-tight">Bienvenido</h1>

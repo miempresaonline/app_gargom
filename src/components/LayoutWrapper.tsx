@@ -30,7 +30,7 @@ export default function LayoutWrapper({
       <div className="md:hidden fixed top-0 left-0 right-0 h-16 bg-[#03194B] z-50 flex items-center justify-between px-4 shadow-lg">
         <div className="flex items-center">
           <img 
-            src="/logo_oscuro.png" 
+            src="https://ltukyxwcvivaiuqaxlgo.supabase.co/storage/v1/object/sign/COSAS/gargom/logo_gargom_png_transparente_fondos_oscuros.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV83Y2FiZGYxMy0yNDVkLTQ2ZWUtYjFjNy0xM2Q3MGIwNTg5NDMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJDT1NBUy9nYXJnb20vbG9nb19nYXJnb21fcG5nX3RyYW5zcGFyZW50ZV9mb25kb3Nfb3NjdXJvcy5wbmciLCJpYXQiOjE3Nzc0MTM5NTEsImV4cCI6MTgwODk0OTk1MX0.6Elwrwg9io_tkVh0Pvefqmy3lV69BDs9V7BcpL0P5d8" 
             alt="Gargom Logo" 
             className="h-8 w-auto object-contain"
           />

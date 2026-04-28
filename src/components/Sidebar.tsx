@@ -23,11 +23,11 @@ export default async function Sidebar() {
       {/* Decorative gradient orb */}
       <div className="absolute top-[-50px] left-[-50px] w-40 h-40 bg-blue-500/20 blur-[50px] rounded-full pointer-events-none" />
       
-      <div className="flex items-center justify-center h-24 px-6 border-b border-white/10 relative z-10">
+      <div className="flex items-center justify-center h-28 px-4 border-b border-white/10 relative z-10 py-2">
         <img 
           src="https://ltukyxwcvivaiuqaxlgo.supabase.co/storage/v1/object/sign/COSAS/gargom/logo_gargom_png_transparente_fondos_oscuros.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV83Y2FiZGYxMy0yNDVkLTQ2ZWUtYjFjNy0xM2Q3MGIwNTg5NDMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJDT1NBUy9nYXJnb20vbG9nb19nYXJnb21fcG5nX3RyYW5zcGFyZW50ZV9mb25kb3Nfb3NjdXJvcy5wbmciLCJpYXQiOjE3Nzc0MTM5NTEsImV4cCI6MTgwODk0OTk1MX0.6Elwrwg9io_tkVh0Pvefqmy3lV69BDs9V7BcpL0P5d8" 
           alt="Gargom Logo" 
-          className="h-14 w-auto object-contain drop-shadow-xl"
+          className="h-24 w-auto object-contain drop-shadow-xl"
         />
       </div>
       

@@ -113,7 +113,7 @@ export default function GastosClient({
                       {gasto.tipo}
                     </span>
                     <h3 className="font-bold text-lg text-slate-800 mt-1">
-                      {gasto.concepto || (gasto.tipo === 'PERSONAL' ? \`Horas: \${gasto.worker?.nombre}\` : \`Factura \${gasto.numero}\`)}
+                      {gasto.concepto || (gasto.tipo === 'PERSONAL' ? `Horas: ${gasto.worker?.nombre}` : `Factura ${gasto.numero}`)}
                     </h3>
                   </div>
                   <div className="text-right">

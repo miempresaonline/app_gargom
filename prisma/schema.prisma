@@ -1,0 +1,109 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  nombre    String
+  email     String   @unique
+  password  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Project {
+  id               Int       @id @default(autoincrement())
+  presupuestoTotal Float
+  direccion        String
+  arquitecto       String?
+  aparejador       String?
+  cliente          String
+  correo           String?
+  telefono         String?
+  observaciones    String?   @db.Text
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  expenses         Expense[]
+  certifications   Certification[]
+}
+
+model Worker {
+  id         Int       @id @default(autoincrement())
+  nombre     String
+  cargo      String
+  precioHora Float
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  expenses   Expense[]
+}
+
+model Bank {
+  id           Int       @id @default(autoincrement())
+  nombre       String
+  numeroCuenta String
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  expenses     Expense[]
+}
+
+model Supplier {
+  id        Int      @id @default(autoincrement())
+  nombre    String
+  correo    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum ExpenseType {
+  GENERAL
+  INDUSTRIAL
+  MATERIALES
+  SERVICIOS
+  PERSONAL
+}
+
+model Expense {
+  id               Int         @id @default(autoincrement())
+  tipo             ExpenseType
+  concepto         String?
+  importe          Float?
+  fecha            DateTime?
+  numero           String?
+  fechaVencimiento DateTime?
+  pdfUrl           String?
+  horas            Float?
+  observaciones    String?     @db.Text
+  
+  projectId        Int
+  project          Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  bankId           Int?
+  bank             Bank?       @relation(fields: [bankId], references: [id])
+
+  workerId         Int?
+  worker           Worker?     @relation(fields: [workerId], references: [id])
+
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+}
+
+model Certification {
+  id           Int      @id @default(autoincrement())
+  importe      Float
+  numero       String
+  concepto     String
+  enviadaOdoo  Boolean  @default(false)
+  
+  projectId    Int
+  project      Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}

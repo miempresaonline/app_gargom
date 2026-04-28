@@ -22,6 +22,7 @@ conn.on('ready', () => {
     npx prisma generate &&
     npx prisma db push --accept-data-loss &&
     node seed.js &&
+    rm -rf .next &&
     npm run build && 
     npx pm2 delete all || true &&
     npx pm2 start npm --name "gargom" -- run start -- -p 3005

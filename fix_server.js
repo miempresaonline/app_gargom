@@ -11,6 +11,9 @@ conn.on('ready', () => {
     cd /var/www/vhosts/construccionesgargom.es/app.construccionesgargom.es &&
     echo "Current PM2 list:" &&
     npx pm2 list &&
+    echo "Pulling latest code..." &&
+    git fetch --all -f &&
+    git reset --hard origin/main &&
     echo "Deleting all PM2 apps..." &&
     npx pm2 delete all &&
     echo "Killing remaining node processes..." &&

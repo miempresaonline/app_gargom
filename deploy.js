@@ -7,6 +7,9 @@ conn.on('ready', () => {
   // Comando para descargar código, instalar dependencias y reiniciar en Plesk
   const cmd = `
     cd /var/www/vhosts/construccionesgargom.es/app.construccionesgargom.es && 
+    git init &&
+    git remote remove origin 2>/dev/null || true &&
+    git remote add origin https://github.com/miempresaonline/app_gargom.git &&
     git fetch --all -f &&
     git reset --hard origin/main &&
     NPM_BIN=$(ls /opt/plesk/node/*/bin/npm | sort -V | tail -n 1) &&

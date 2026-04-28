@@ -24,7 +24,8 @@ conn.on('ready', () => {
     node seed.js &&
     rm -rf .next &&
     npm run build && 
-    npx pm2 delete all || true &&
+    { npx pm2 stop all || true; } &&
+    { npx pm2 delete all || true; } &&
     npx pm2 start npm --name "gargom" -- run start -- -p 3005
   `;
   

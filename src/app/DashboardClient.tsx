@@ -55,7 +55,10 @@ export default function DashboardClient({ session, data }: { session: any, data:
             <h1 className="text-4xl font-black tracking-tight text-slate-800 mb-2">Hola, {session?.nombre?.split(' ')[0] || 'Admin'}</h1>
             <p className="text-slate-500 font-medium text-lg">Resumen general de operaciones de Gargom.</p>
           </div>
-          <button className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-6 py-3.5 rounded-2xl font-semibold transition-all shadow-[0_10px_20px_rgba(37,99,235,0.2)] hover:shadow-[0_15px_30px_rgba(37,99,235,0.3)] hover:-translate-y-1 flex items-center gap-2 group/btn">
+          <button 
+            onClick={() => window.print()}
+            className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-6 py-3.5 rounded-2xl font-semibold transition-all shadow-[0_10px_20px_rgba(37,99,235,0.2)] hover:shadow-[0_15px_30px_rgba(37,99,235,0.3)] hover:-translate-y-1 flex items-center gap-2 group/btn"
+          >
             <Activity size={20} className="group-hover/btn:rotate-12 transition-transform" />
             <span>Generar Reporte</span>
           </button>

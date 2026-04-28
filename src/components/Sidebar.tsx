@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import Image from 'next/image';
-import { LayoutDashboard, HardHat, Users, Building2, Landmark, Package, ShieldCheck, FileCheck } from 'lucide-react';
+import { LayoutDashboard, HardHat, Users, Building2, Landmark, Coins, ShieldCheck, FileCheck } from 'lucide-react';
 import LogoutButton from './LogoutButton';
 import { getSession } from '@/lib/auth';
 
@@ -10,7 +10,7 @@ export default async function Sidebar() {
   const menuItems = [
     { name: 'Panel Principal', icon: LayoutDashboard, href: '/' },
     { name: 'Obras', icon: HardHat, href: '/obras' },
-    { name: 'Gastos', icon: Package, href: '/gastos' },
+    { name: 'Gastos', icon: Coins, href: '/gastos' },
     { name: 'Certificaciones', icon: FileCheck, href: '/certificaciones' },
     { name: 'Personal', icon: Users, href: '/personal' },
     { name: 'Bancos', icon: Landmark, href: '/bancos' },
@@ -31,6 +31,7 @@ export default async function Sidebar() {
           height={60} 
           className="object-contain drop-shadow-xl"
           priority
+          unoptimized
         />
       </div>
       

@@ -18,8 +18,8 @@ conn.on('ready', () => {
     export PATH=$NODE_DIR:$PATH &&
     echo "Usando NPM en: $NPM_BIN" &&
     npm install && 
-    npm run build &&
-    mkdir -p tmp && touch tmp/restart.txt
+    npm run build && 
+    npx pm2 start npm --name "gargom" -- run start -- -p 3005 || npx pm2 restart gargom
   `;
   
   conn.exec(cmd, (err, stream) => {

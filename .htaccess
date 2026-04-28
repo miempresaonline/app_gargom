@@ -1,0 +1,6 @@
+PassengerEnabled off
+DirectoryIndex disabled
+
+RewriteEngine On
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule ^(.*)$ http://127.0.0.1:3005/$1 [P,L]

@@ -1,35 +1,15 @@
-process.env.NODE_ENV = 'production';
 const path = require('path');
-const http = require('http');
+const { execSync } = require('child_process');
 
-// Next.js server requires required-server-files.json
-let conf = {};
 try {
-  conf = require('./.next/required-server-files.json').config;
-} catch (e) {
-  console.error('Could not load required-server-files.json. Ensure you have run "npm run build".');
-}
+  // Copy static assets into the standalone directory for production
+  execSync('cp -r public .next/standalone/public 2>/dev/null');
+  execSync('mkdir -p .next/standalone/.next && cp -r .next/static .next/standalone/.next/static 2>/dev/null');
+} catch (e) {}
 
-const NextServer = require('next/dist/server/next-server').default;
+// Tell Passenger to run the standalone Next.js server
+const standaloneDir = path.join(__dirname, '.next', 'standalone');
+process.chdir(standaloneDir);
 
-const app = new NextServer({
-  hostname: 'localhost',
-  port: process.env.PORT || 3000,
-  dir: __dirname,
-  dev: false,
-  conf,
-});
-
-const handler = app.getRequestHandler();
-
-const server = http.createServer((req, res) => {
-  handler(req, res).catch((err) => {
-    console.error(err);
-    res.statusCode = 500;
-    res.end('Internal Server Error');
-  });
-});
-
-server.listen(process.env.PORT || 3000, () => {
-  console.log(`> Ready on http://localhost:${process.env.PORT || 3000}`);
-});
+// Load the Next.js standalone server. Passenger intercepts http.listen
+require(path.join(standaloneDir, 'server.js'));

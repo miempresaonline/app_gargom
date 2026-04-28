@@ -1,15 +1,31 @@
-const path = require('path');
-const { execSync } = require('child_process');
+const { createServer } = require('http');
+const { parse } = require('url');
+const next = require('next');
 
-try {
-  // Copy static assets into the standalone directory for production
-  execSync('cp -r public .next/standalone/public 2>/dev/null');
-  execSync('mkdir -p .next/standalone/.next && cp -r .next/static .next/standalone/.next/static 2>/dev/null');
-} catch (e) {}
+const dev = process.env.NODE_ENV !== 'production';
+const hostname = 'localhost';
+const port = process.env.PORT || 3000;
 
-// Tell Passenger to run the standalone Next.js server
-const standaloneDir = path.join(__dirname, '.next', 'standalone');
-process.chdir(standaloneDir);
+// when using middleware `hostname` and `port` must be provided below
+const app = next({ dev, hostname, port });
+const handle = app.getRequestHandler();
 
-// Load the Next.js standalone server. Passenger intercepts http.listen
-require(path.join(standaloneDir, 'server.js'));
+app.prepare().then(() => {
+  createServer(async (req, res) => {
+    try {
+      const parsedUrl = parse(req.url, true);
+      await handle(req, res, parsedUrl);
+    } catch (err) {
+      console.error('Error occurred handling', req.url, err);
+      res.statusCode = 500;
+      res.end('internal server error');
+    }
+  })
+    .once('error', (err) => {
+      console.error(err);
+      process.exit(1);
+    })
+    .listen(port, () => {
+      console.log(`> Ready on http://${hostname}:${port}`);
+    });
+});

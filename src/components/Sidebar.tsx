@@ -19,7 +19,7 @@ export default async function Sidebar() {
   ];
 
   return (
-    <aside className="fixed left-0 top-0 h-screen w-64 bg-[#03194B] text-white shadow-[20px_0_40px_rgba(3,25,75,0.1)] flex flex-col z-50 overflow-hidden">
+    <aside className="h-full w-full bg-[#03194B] text-white shadow-[20px_0_40px_rgba(3,25,75,0.1)] flex flex-col z-50 overflow-hidden relative">
       {/* Decorative gradient orb */}
       <div className="absolute top-[-50px] left-[-50px] w-40 h-40 bg-blue-500/20 blur-[50px] rounded-full pointer-events-none" />
       

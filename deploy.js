@@ -23,7 +23,8 @@ conn.on('ready', () => {
     npx prisma db push --accept-data-loss &&
     node seed.js &&
     npm run build && 
-    npx pm2 start npm --name "gargom" -- run start -- -p 3005 || npx pm2 restart gargom
+    npx pm2 delete all || true &&
+    npx pm2 start npm --name "gargom" -- run start -- -p 3005
   `;
   
   conn.exec(cmd, (err, stream) => {

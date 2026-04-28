@@ -1,10 +1,8 @@
 'use server';
 
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '@/lib/db';
 import bcrypt from 'bcryptjs';
 import { revalidatePath } from 'next/cache';
-
-const prisma = new PrismaClient();
 
 export async function createUser(prevState: any, formData: FormData) {
   const nombre = formData.get('nombre') as string;

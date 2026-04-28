@@ -1,7 +1,5 @@
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '@/lib/db';
 import UsuariosClient from './client';
-
-const prisma = new PrismaClient();
 
 export default async function UsuariosPage() {
   const users = await prisma.user.findMany({

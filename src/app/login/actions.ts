@@ -1,11 +1,9 @@
 'use server';
 
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '@/lib/db';
 import bcrypt from 'bcryptjs';
 import { signToken } from '@/lib/auth';
 import { cookies } from 'next/headers';
-
-const prisma = new PrismaClient();
 
 export async function loginUser(prevState: any, formData: FormData) {
   const email = formData.get('email') as string;

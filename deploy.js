@@ -20,8 +20,7 @@ conn.on('ready', () => {
     npm install && 
     echo "y" | npx prisma db push --accept-data-loss &&
     npm run build && 
-    mkdir -p tmp && 
-    touch tmp/restart.txt
+    npx pm2 start npm --name "gargom" -- run start -- -p 3005 || npx pm2 restart gargom
   `;
   
   conn.exec(cmd, (err, stream) => {

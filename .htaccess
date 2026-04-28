@@ -1,0 +1,5 @@
+PassengerEnabled off
+
+RewriteEngine On
+RewriteCond %{REQUEST_URI} !^/public/
+RewriteRule ^(.*)$ http://127.0.0.1:3005/$1 [P,L]

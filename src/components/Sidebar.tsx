@@ -24,14 +24,10 @@ export default async function Sidebar() {
       <div className="absolute top-[-50px] left-[-50px] w-40 h-40 bg-blue-500/20 blur-[50px] rounded-full pointer-events-none" />
       
       <div className="flex items-center justify-center h-24 px-6 border-b border-white/10 relative z-10">
-        <Image 
-          src="/logo_gargom.png" 
+        <img 
+          src="/logo_oscuro.png" 
           alt="Gargom Logo" 
-          width={180} 
-          height={60} 
-          className="object-contain drop-shadow-xl"
-          priority
-          unoptimized
+          className="w-48 h-auto object-contain drop-shadow-xl"
         />
       </div>
       

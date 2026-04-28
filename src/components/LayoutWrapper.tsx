@@ -28,7 +28,13 @@ export default function LayoutWrapper({
     <>
       {/* Mobile Topbar */}
       <div className="md:hidden fixed top-0 left-0 right-0 h-16 bg-[#03194B] z-50 flex items-center justify-between px-4 shadow-lg">
-        <div className="text-white font-bold text-xl tracking-tight">GARGOM</div>
+        <div className="flex items-center">
+          <img 
+            src="/logo_oscuro.png" 
+            alt="Gargom Logo" 
+            className="h-8 w-auto object-contain"
+          />
+        </div>
         <button 
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
           className="text-white p-2 rounded-lg hover:bg-white/10"

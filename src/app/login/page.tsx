@@ -38,8 +38,12 @@ export default function LoginPage() {
       >
         <div className="bg-white/80 backdrop-blur-2xl border border-white/50 shadow-2xl shadow-gargom-blue/5 rounded-3xl p-8 sm:p-10">
           <div className="text-center mb-10">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gargom-blue text-white shadow-lg mb-6 shadow-gargom-blue/20">
-              <Lock size={32} strokeWidth={1.5} />
+            <div className="flex justify-center mb-6">
+              <img 
+                src="/logo_claro.png" 
+                alt="Gargom Logo" 
+                className="h-20 w-auto object-contain drop-shadow-md"
+              />
             </div>
             <h1 className="text-3xl font-bold text-gargom-blue tracking-tight">Bienvenido</h1>
             <p className="text-slate-500 mt-2 text-sm">Inicia sesión en Gargom ERP</p>

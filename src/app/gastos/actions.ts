@@ -99,3 +99,58 @@ export async function deleteGasto(id: number) {
     return { error: 'Error al eliminar el gasto' };
   }
 }
+
+export async function parseInvoiceWithGroq(base64Image: string) {
+  try {
+    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: "llama-3.2-11b-vision-preview",
+        messages: [
+          {
+            role: "user",
+            content: [
+              {
+                type: "text",
+                text: "Extract information from this invoice. Return ONLY a valid JSON object without markdown or explanations. Required keys: 'concepto' (string: main supplier or brief description), 'numero' (string: invoice number), 'importe' (number: total amount), 'fecha' (string: YYYY-MM-DD), 'fechaVencimiento' (string: YYYY-MM-DD). If a field is not found, use null."
+              },
+              {
+                type: "image_url",
+                image_url: {
+                  url: base64Image
+                }
+              }
+            ]
+          }
+        ],
+        temperature: 0.1
+      })
+    });
+
+    if (!response.ok) {
+      console.error('Groq Error:', await response.text());
+      return { error: 'Error al analizar la factura con IA' };
+    }
+
+    const data = await response.json();
+    let content = data.choices[0]?.message?.content || '{}';
+    
+    // Clean up potential markdown formatting from the response
+    content = content.replace(/```json\n?/g, '').replace(/```/g, '').trim();
+    
+    try {
+      const parsed = JSON.parse(content);
+      return { success: true, data: parsed };
+    } catch (e) {
+      console.error('Failed to parse Groq response as JSON:', content);
+      return { error: 'La respuesta de la IA no tenía el formato correcto' };
+    }
+  } catch (error) {
+    console.error('Groq execution error:', error);
+    return { error: 'Error de conexión con la IA' };
+  }
+}

@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useTransition, useEffect } from 'react';
+import { useState, useTransition, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, X, Package, FileText, Calendar, Building, Landmark, Pickaxe, HardHat, FileUp, Loader2, Trash2, Users, Copy, Search, Edit2 } from 'lucide-react';
-import { createGasto, updateGasto, deleteGasto } from './actions';
+import { createGasto, updateGasto, deleteGasto, parseInvoiceWithGroq } from './actions';
 
 export default function GastosClient({ 
   initialGastos, obras, bancos, trabajadores 
@@ -18,6 +18,43 @@ export default function GastosClient({
   const [isDeleting, setIsDeleting] = useState<number | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<string>('ALL');
+  
+  // AI Parsing
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsAnalyzing(true);
+    setError(null);
+    try {
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        const base64Data = reader.result as string;
+        const result = await parseInvoiceWithGroq(base64Data);
+        if (result.error) {
+          setError(result.error);
+        } else if (result.success && result.data) {
+          // Fill form via state editingGasto
+          setEditingGasto((prev: any) => ({
+             ...prev,
+             concepto: result.data.concepto || prev?.concepto || '',
+             numero: result.data.numero || prev?.numero || '',
+             importe: result.data.importe || prev?.importe || '',
+             fecha: result.data.fecha ? new Date(result.data.fecha).toISOString() : prev?.fecha,
+             fechaVencimiento: result.data.fechaVencimiento ? new Date(result.data.fechaVencimiento).toISOString() : prev?.fechaVencimiento
+          }));
+        }
+        setIsAnalyzing(false);
+      };
+      reader.readAsDataURL(file);
+    } catch (err) {
+      setError('Error al procesar el archivo localmente');
+      setIsAnalyzing(false);
+    }
+  };
 
   // Form state for Personal auto-calculation
   const [selectedWorkerId, setSelectedWorkerId] = useState<string>('');
@@ -280,7 +317,7 @@ export default function GastosClient({
                   </button>
                 </div>
 
-                <form onSubmit={handleSubmit} className="space-y-6">
+                <form key={editingGasto ? JSON.stringify(editingGasto) : 'new'} onSubmit={handleSubmit} className="space-y-6">
                   {/* Tipo y Obra */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-1">
@@ -361,11 +398,31 @@ export default function GastosClient({
                           </select>
                         </div>
                         <div className="space-y-1 md:col-span-2 mt-2">
-                          <label className="text-sm font-medium text-slate-700 ml-1">Adjuntar PDF (Próximamente AI)</label>
-                          <div className="border-2 border-dashed border-slate-300 rounded-xl p-6 flex flex-col items-center justify-center bg-slate-50 text-slate-400 hover:bg-slate-100 hover:border-gargom-accent transition-colors cursor-pointer">
-                            <FileUp size={24} className="mb-2" />
-                            <span className="text-sm font-medium">Haz clic o arrastra un PDF aquí</span>
-                            <span className="text-xs mt-1">La IA leerá los datos automáticamente</span>
+                          <label className="text-sm font-medium text-slate-700 ml-1">Extraer datos de factura con IA</label>
+                          <input 
+                            type="file" 
+                            accept="image/*" 
+                            ref={fileInputRef} 
+                            className="hidden" 
+                            onChange={handleFileUpload}
+                          />
+                          <div 
+                            onClick={() => fileInputRef.current?.click()}
+                            className={`border-2 border-dashed border-slate-300 rounded-xl p-6 flex flex-col items-center justify-center bg-slate-50 transition-colors cursor-pointer ${isAnalyzing ? 'opacity-70 pointer-events-none' : 'hover:bg-slate-100 hover:border-gargom-accent text-slate-400'}`}
+                          >
+                            {isAnalyzing ? (
+                              <>
+                                <Loader2 size={24} className="mb-2 animate-spin text-gargom-accent" />
+                                <span className="text-sm font-medium text-gargom-accent">La IA está leyendo la factura...</span>
+                                <span className="text-xs mt-1 text-slate-500">Esto puede tardar unos segundos</span>
+                              </>
+                            ) : (
+                              <>
+                                <FileUp size={24} className="mb-2" />
+                                <span className="text-sm font-medium text-slate-600">Sube una foto de la factura</span>
+                                <span className="text-xs mt-1 text-slate-500">La IA rellenará los campos automáticamente</span>
+                              </>
+                            )}
                           </div>
                         </div>
                       </div>

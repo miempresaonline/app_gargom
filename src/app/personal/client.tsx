@@ -15,6 +15,7 @@ export default function PersonalClient({ initialWorkers }: { initialWorkers: any
   const [editPrecioHora, setEditPrecioHora] = useState<number>(0);
   const [isUpdating, setIsUpdating] = useState(false);
   const [isDeleting, setIsDeleting] = useState<number | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     if (state?.success) {
@@ -37,6 +38,11 @@ export default function PersonalClient({ initialWorkers }: { initialWorkers: any
     }
   };
 
+  const filteredWorkers = initialWorkers.filter(worker => 
+    worker.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    worker.cargo.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   return (
     <div className="p-6 md:p-8 w-full max-w-6xl mx-auto space-y-8">
       {/* Header */}
@@ -54,10 +60,24 @@ export default function PersonalClient({ initialWorkers }: { initialWorkers: any
         </button>
       </div>
 
+      {/* Search Bar */}
+      <div className="relative max-w-md">
+        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+        </div>
+        <input
+          type="text"
+          placeholder="Buscar por nombre o cargo..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gargom-accent/50 shadow-sm"
+        />
+      </div>
+
       {/* Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
         <AnimatePresence>
-          {initialWorkers.map((worker, index) => (
+          {filteredWorkers.map((worker, index) => (
             <motion.div
               key={worker.id}
               initial={{ opacity: 0, y: 30 }}

@@ -3,7 +3,7 @@
 import { motion } from 'framer-motion';
 import { LayoutDashboard, TrendingUp, HardHat, FileText, Activity, Users, Plus, ArrowRight } from 'lucide-react';
 import { useState, useEffect } from 'react';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import Link from 'next/link';
 
 export default function DashboardClient({ session, data }: { session: any, data: any }) {
@@ -74,34 +74,41 @@ export default function DashboardClient({ session, data }: { session: any, data:
         <motion.div variants={container} className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <motion.div variants={item} className="lg:col-span-2 bg-white/70 backdrop-blur-xl border border-white rounded-3xl p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] relative overflow-hidden group hover:border-blue-100 transition-colors">
             <div className="flex justify-between items-center mb-8">
-              <h2 className="text-xl font-bold text-slate-800">Evolución de Gastos</h2>
-              <Link href="/gastos" className="text-sm font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1 group/link">
+              <h2 className="text-xl font-bold text-slate-800">Presupuesto vs Gastos (Activas)</h2>
+              <Link href="/obras" className="text-sm font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1 group/link">
                 Ver detalle <ArrowRight size={16} className="group-hover/link:translate-x-1 transition-transform" />
               </Link>
             </div>
             <div className="h-[320px] w-full">
-              {data.chartData && data.chartData.length > 0 ? (
+              {data.obrasDestacadas && data.obrasDestacadas.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={data.chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                    <defs>
-                      <linearGradient id="colorGastos" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
-                        <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
-                      </linearGradient>
-                    </defs>
+                  <BarChart data={data.obrasDestacadas} margin={{ top: 10, right: 10, left: -20, bottom: 0 }} barGap={8} barSize={24}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
                     <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 12}} dy={10} />
                     <YAxis axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 12}} tickFormatter={(value) => `${value}€`} />
                     <Tooltip 
-                      contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)' }}
-                      formatter={(value: any) => [formatMoney(value), 'Gastos']}
+                      contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 20px 40px -5px rgb(0 0 0 / 0.15)', background: 'rgba(255,255,255,0.9)', backdropFilter: 'blur(10px)' }}
+                      formatter={(value: any, name: any) => [formatMoney(value), name === 'presupuestoTotal' ? 'Presupuesto' : 'Gastos']}
+                      cursor={{fill: 'transparent'}}
                     />
-                    <Area type="monotone" dataKey="gastos" stroke="#3b82f6" strokeWidth={3} fillOpacity={1} fill="url(#colorGastos)" />
-                  </AreaChart>
+                    <Bar dataKey="presupuestoTotal" name="Presupuesto" fill="url(#colorPresupuesto)" radius={[6, 6, 6, 6]} />
+                    <Bar dataKey="totalGastosObra" name="Gastos" fill="url(#colorGastos)" radius={[6, 6, 6, 6]} />
+                    <defs>
+                      <linearGradient id="colorPresupuesto" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#818cf8"/>
+                        <stop offset="100%" stopColor="#4f46e5"/>
+                      </linearGradient>
+                      <linearGradient id="colorGastos" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#f87171"/>
+                        <stop offset="100%" stopColor="#dc2626"/>
+                      </linearGradient>
+                    </defs>
+                  </BarChart>
                 </ResponsiveContainer>
               ) : (
                 <div className="h-full flex flex-col items-center justify-center text-slate-400 bg-gradient-to-b from-slate-50/50 to-slate-100/50 rounded-2xl border border-dashed border-slate-200/60">
                   <Activity size={32} className="mb-2 text-slate-300" />
-                  <p className="text-sm font-medium">No hay datos suficientes para el gráfico.</p>
+                  <p className="text-sm font-medium">No hay obras suficientes para el gráfico.</p>
                 </div>
               )}
             </div>
@@ -109,64 +116,81 @@ export default function DashboardClient({ session, data }: { session: any, data:
           
           <motion.div variants={item} className="bg-white/70 backdrop-blur-xl border border-white rounded-3xl p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] relative overflow-hidden group hover:border-indigo-100 transition-colors flex flex-col">
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-bold text-slate-800">Últimas Obras</h2>
-              <Link href="/obras" className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition-colors">
-                <Plus size={18} />
-              </Link>
+              <h2 className="text-xl font-bold text-slate-800">Distribución de Gastos</h2>
             </div>
             
-            <div className="space-y-4 flex-1">
-              {data.obrasDestacadas && data.obrasDestacadas.length > 0 ? (
-                data.obrasDestacadas.map((obra: any, i: number) => (
-                  <Link href={`/obras`} key={obra.id} className="flex items-center gap-4 p-4 hover:bg-white rounded-2xl transition-all cursor-pointer border border-transparent hover:border-slate-100 hover:shadow-[0_4px_20px_rgb(0,0,0,0.03)] group/item">
-                    <div className="w-12 h-12 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-500 group-hover/item:text-blue-600 group-hover/item:bg-blue-50 group-hover/item:border-blue-100 transition-colors shadow-sm shrink-0">
-                      <HardHat size={20} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex justify-between items-center mb-1">
-                        <p className="font-bold text-sm text-slate-700 truncate mr-2">{obra.cliente}</p>
-                        <span className="text-xs font-bold text-slate-400 whitespace-nowrap">{formatMoney(obra.presupuestoTotal)}</span>
-                      </div>
-                      <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden mt-2">
-                        <motion.div 
-                          initial={{ width: 0 }}
-                          animate={{ width: `${Math.min(100, 30 + i * 20)}%` }}
-                          transition={{ duration: 1, delay: 0.5 + i * 0.1 }}
-                          className="bg-gradient-to-r from-blue-500 to-indigo-500 h-full rounded-full"
-                        />
-                      </div>
-                    </div>
-                  </Link>
-                ))
+            <div className="h-[220px] w-full mb-6">
+              {Object.keys(data.gastosPorTipo).length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={Object.entries(data.gastosPorTipo).map(([name, value]) => ({ name, value }))}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={80}
+                      paddingAngle={5}
+                      dataKey="value"
+                    >
+                      {Object.keys(data.gastosPorTipo).map((tipo, index) => {
+                        const colors: any = {
+                          'PERSONAL': ['#34d399', '#059669'], // emerald
+                          'GENERAL': ['#c084fc', '#9333ea'], // purple
+                          'MATERIALES': ['#60a5fa', '#2563eb'], // blue
+                          'SUBCONTRATAS': ['#fbbf24', '#d97706'], // amber
+                        };
+                        const colorSet = colors[tipo] || ['#f97316', '#ea580c']; // orange default
+                        return (
+                          <Cell key={`cell-${index}`} fill={`url(#pieGradient-${index})`} />
+                        );
+                      })}
+                    </Pie>
+                    <Tooltip 
+                      formatter={(value: any) => formatMoney(value)}
+                      contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 25px -5px rgb(0 0 0 / 0.1)' }}
+                    />
+                    <defs>
+                      {Object.keys(data.gastosPorTipo).map((tipo, index) => {
+                        const colors: any = {
+                          'PERSONAL': ['#34d399', '#059669'],
+                          'GENERAL': ['#c084fc', '#9333ea'],
+                          'MATERIALES': ['#60a5fa', '#2563eb'],
+                          'SUBCONTRATAS': ['#fbbf24', '#d97706'],
+                        };
+                        const colorSet = colors[tipo] || ['#f97316', '#ea580c'];
+                        return (
+                          <linearGradient key={`gradient-${index}`} id={`pieGradient-${index}`} x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor={colorSet[0]} />
+                            <stop offset="100%" stopColor={colorSet[1]} />
+                          </linearGradient>
+                        );
+                      })}
+                    </defs>
+                  </PieChart>
+                </ResponsiveContainer>
               ) : (
-                <div className="h-full flex items-center justify-center text-slate-400 text-sm">
-                  No hay obras registradas
+                <div className="h-full flex items-center justify-center text-slate-400 text-sm border border-dashed border-slate-200 rounded-2xl bg-slate-50">
+                  Sin gastos registrados
                 </div>
               )}
             </div>
             
-            {/* Gastos Distribution (Mini view) */}
-            <div className="mt-8 pt-6 border-t border-slate-100">
-              <h3 className="text-sm font-bold text-slate-800 mb-4">Distribución de Gastos</h3>
-              <div className="space-y-3">
-                {Object.entries(data.gastosPorTipo).map(([tipo, amount]: [string, any]) => (
-                  <div key={tipo} className="flex justify-between items-center text-sm">
-                    <div className="flex items-center gap-2">
-                      <div className={`w-2 h-2 rounded-full ${
-                        tipo === 'PERSONAL' ? 'bg-green-500' : 
-                        tipo === 'GENERAL' ? 'bg-purple-500' : 
-                        tipo === 'MATERIALES' ? 'bg-blue-500' : 
-                        'bg-orange-500'
-                      }`} />
-                      <span className="text-slate-600 capitalize">{tipo.toLowerCase()}</span>
-                    </div>
-                    <span className="font-semibold text-slate-800">{formatMoney(amount)}</span>
+            <div className="space-y-3 flex-1 overflow-y-auto custom-scrollbar pr-2">
+              {Object.entries(data.gastosPorTipo).map(([tipo, amount]: [string, any]) => (
+                <div key={tipo} className="flex justify-between items-center text-sm p-3 rounded-xl bg-slate-50 hover:bg-slate-100 transition-colors border border-slate-100">
+                  <div className="flex items-center gap-2">
+                    <div className={`w-3 h-3 rounded-full shadow-sm ${
+                      tipo === 'PERSONAL' ? 'bg-emerald-500' : 
+                      tipo === 'GENERAL' ? 'bg-purple-500' : 
+                      tipo === 'MATERIALES' ? 'bg-blue-500' : 
+                      tipo === 'SUBCONTRATAS' ? 'bg-amber-500' : 
+                      'bg-orange-500'
+                    }`} />
+                    <span className="font-semibold text-slate-700 capitalize">{tipo.toLowerCase()}</span>
                   </div>
-                ))}
-                {Object.keys(data.gastosPorTipo).length === 0 && (
-                   <div className="text-center text-slate-400 text-xs">Sin gastos</div>
-                )}
-              </div>
+                  <span className="font-bold text-slate-800">{formatMoney(amount)}</span>
+                </div>
+              ))}
             </div>
           </motion.div>
         </motion.div>

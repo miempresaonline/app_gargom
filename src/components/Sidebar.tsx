@@ -61,7 +61,7 @@ export default async function Sidebar() {
         <LogoutButton />
         <div className="mt-4 text-center">
           <span className="text-[10px] font-mono text-white/30 font-bold tracking-widest uppercase hover:text-white/50 transition-colors cursor-default">
-            Gargom ERP v1.2.0
+            Gargom ERP v1.3.0
           </span>
         </div>
       </div>

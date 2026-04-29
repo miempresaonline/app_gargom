@@ -152,7 +152,129 @@ export default function CertificacionesClient({ initialCertificaciones, obras }:
                 </div>
               </div>
 
-              <div className="mt-6 pt-4 border-t border-slate-100">
+              <div className="mt-6 pt-4 border-t border-slate-100 flex flex-col gap-3">
+                <button
+                  onClick={async () => {
+                    setIsSendingOdoo(cert.id); // Reusing state for loading spinner
+                    try {
+                      const { jsPDF } = await import('jspdf');
+                      const html2canvas = (await import('html2canvas')).default;
+                      
+                      const el = document.createElement('div');
+                      el.style.width = '800px';
+                      el.style.padding = '60px';
+                      el.style.backgroundColor = 'white';
+                      el.style.position = 'absolute';
+                      el.style.left = '-9999px';
+                      el.style.top = '-9999px';
+                      el.style.fontFamily = 'system-ui, -apple-system, sans-serif';
+                      
+                      // Format currency
+                      const formatMoney = (n: number) => new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(n);
+                      const iva = cert.importe * 0.21;
+                      const total = cert.importe + iva;
+                      const fecha = new Date(cert.createdAt || Date.now()).toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' });
+
+                      el.innerHTML = `
+                        <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; opacity: 0.03; background-image: url('https://ltukyxwcvivaiuqaxlgo.supabase.co/storage/v1/object/sign/COSAS/gargom/logo_gargom_png_transparente_fondos_oscuros.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV83Y2FiZGYxMy0yNDVkLTQ2ZWUtYjFjNy0xM2Q3MGIwNTg5NDMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJDT1NBUy9nYXJnb20vbG9nb19nYXJnb21fcG5nX3RyYW5zcGFyZW50ZV9mb25kb3Nfb3NjdXJvcy5wbmciLCJpYXQiOjE3Nzc0MTM5NTEsImV4cCI6MTgwODk0OTk1MX0.6Elwrwg9io_tkVh0Pvefqmy3lV69BDs9V7BcpL0P5d8'); background-size: 50%; background-position: center; background-repeat: no-repeat; z-index: 0;"></div>
+                        <div style="position: relative; z-index: 10;">
+                          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 50px; border-bottom: 2px solid #0f172a; padding-bottom: 30px;">
+                            <div>
+                              <img src="https://ltukyxwcvivaiuqaxlgo.supabase.co/storage/v1/object/sign/COSAS/gargom/logo_gargom_png_transparente_fondos_oscuros.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV83Y2FiZGYxMy0yNDVkLTQ2ZWUtYjFjNy0xM2Q3MGIwNTg5NDMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJDT1NBUy9nYXJnb20vbG9nb19nYXJnb21fcG5nX3RyYW5zcGFyZW50ZV9mb25kb3Nfb3NjdXJvcy5wbmciLCJpYXQiOjE3Nzc0MTM5NTEsImV4cCI6MTgwODk0OTk1MX0.6Elwrwg9io_tkVh0Pvefqmy3lV69BDs9V7BcpL0P5d8" style="height: 60px; filter: brightness(0) invert(0);" />
+                              <div style="margin-top: 15px; color: #64748b; font-size: 14px;">
+                                <p style="margin: 0;">Construcciones Gargom S.L.</p>
+                                <p style="margin: 0;">B-12345678</p>
+                                <p style="margin: 0;">C/ Falsa 123, 28000 Madrid</p>
+                              </div>
+                            </div>
+                            <div style="text-align: right;">
+                              <h1 style="margin: 0; color: #0f172a; font-size: 32px; font-weight: 800; letter-spacing: -1px;">CERTIFICACIÓN</h1>
+                              <p style="margin: 5px 0 0 0; color: #3b82f6; font-size: 18px; font-weight: 600;">Nº ${cert.numero}</p>
+                              <p style="margin: 10px 0 0 0; color: #64748b; font-size: 14px;">Fecha: ${fecha}</p>
+                            </div>
+                          </div>
+                          
+                          <div style="display: flex; gap: 40px; margin-bottom: 40px;">
+                            <div style="flex: 1; background: #f8fafc; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0;">
+                              <h3 style="margin: 0 0 10px 0; color: #94a3b8; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Datos del Proyecto</h3>
+                              <p style="margin: 0 0 5px 0; color: #0f172a; font-weight: 600; font-size: 16px;">${cert.project?.direccion || 'Obra Eliminada'}</p>
+                              <p style="margin: 0; color: #64748b; font-size: 14px;">Cliente: ${cert.project?.cliente || '-'}</p>
+                            </div>
+                          </div>
+
+                          <div style="margin-bottom: 40px;">
+                            <h2 style="color: #0f172a; font-size: 18px; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px; margin-bottom: 20px;">Detalle de la Certificación</h2>
+                            <table style="width: 100%; border-collapse: collapse;">
+                              <thead>
+                                <tr>
+                                  <th style="text-align: left; padding: 12px; background: #f1f5f9; color: #475569; font-size: 13px; font-weight: 600; border-radius: 8px 0 0 8px;">Concepto</th>
+                                  <th style="text-align: right; padding: 12px; background: #f1f5f9; color: #475569; font-size: 13px; font-weight: 600; border-radius: 0 8px 8px 0;">Importe</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                <tr>
+                                  <td style="padding: 20px 12px; border-bottom: 1px solid #e2e8f0; color: #0f172a; font-weight: 500;">${cert.concepto}</td>
+                                  <td style="padding: 20px 12px; border-bottom: 1px solid #e2e8f0; text-align: right; color: #0f172a; font-weight: 600;">${formatMoney(cert.importe)}</td>
+                                </tr>
+                              </tbody>
+                            </table>
+                          </div>
+
+                          <div style="display: flex; justify-content: flex-end; margin-bottom: 60px;">
+                            <div style="width: 300px; background: #f8fafc; padding: 20px; border-radius: 12px;">
+                              <div style="display: flex; justify-content: space-between; margin-bottom: 10px; color: #64748b; font-size: 14px;">
+                                <span>Base Imponible</span>
+                                <span>${formatMoney(cert.importe)}</span>
+                              </div>
+                              <div style="display: flex; justify-content: space-between; margin-bottom: 15px; color: #64748b; font-size: 14px;">
+                                <span>IVA (21%)</span>
+                                <span>${formatMoney(iva)}</span>
+                              </div>
+                              <div style="display: flex; justify-content: space-between; padding-top: 15px; border-top: 2px solid #e2e8f0; color: #0f172a; font-size: 18px; font-weight: 800;">
+                                <span>TOTAL</span>
+                                <span>${formatMoney(total)}</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div style="display: flex; justify-content: space-between; margin-top: 80px; text-align: center;">
+                            <div style="width: 250px;">
+                              <div style="border-bottom: 1px solid #cbd5e1; height: 60px; margin-bottom: 10px;"></div>
+                              <p style="margin: 0; color: #64748b; font-size: 13px;">Firma Gargom</p>
+                            </div>
+                            <div style="width: 250px;">
+                              <div style="border-bottom: 1px solid #cbd5e1; height: 60px; margin-bottom: 10px;"></div>
+                              <p style="margin: 0; color: #64748b; font-size: 13px;">Firma y Sello Cliente</p>
+                            </div>
+                          </div>
+                        </div>
+                      `;
+                      
+                      document.body.appendChild(el);
+                      const canvas = await html2canvas(el, { scale: 2, useCORS: true });
+                      const imgData = canvas.toDataURL('image/png');
+                      const pdf = new jsPDF('p', 'mm', 'a4');
+                      const pdfWidth = pdf.internal.pageSize.getWidth();
+                      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+                      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+                      pdf.save(`Gargom_Cert_${cert.numero}.pdf`);
+                      document.body.removeChild(el);
+                    } catch (error) {
+                      console.error('Error generating PDF:', error);
+                      alert('Error al generar el PDF. Verifica la consola.');
+                    }
+                    setIsSendingOdoo(null);
+                  }}
+                  disabled={isSendingOdoo === cert.id}
+                  className="w-full flex items-center justify-center gap-2 text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 py-2.5 rounded-lg font-medium transition-all shadow-md shadow-blue-500/20 disabled:opacity-70 hover:shadow-lg"
+                >
+                  {isSendingOdoo === cert.id ? (
+                    <><Loader2 size={18} className="animate-spin" /> Procesando...</>
+                  ) : (
+                    <><FileCheck size={18} /> Generar Documento (PDF)</>
+                  )}
+                </button>
+
                 {cert.enviadaOdoo ? (
                   <div className="flex items-center justify-center gap-2 text-green-600 bg-green-50 py-2.5 rounded-lg font-medium border border-green-100">
                     <CheckCircle2 size={18} />
@@ -162,7 +284,7 @@ export default function CertificacionesClient({ initialCertificaciones, obras }:
                   <button 
                     onClick={() => handleSendOdoo(cert.id)}
                     disabled={isSendingOdoo === cert.id}
-                    className="w-full flex items-center justify-center gap-2 text-white bg-slate-800 hover:bg-black py-2.5 rounded-lg font-medium transition-colors shadow-md shadow-slate-800/20 disabled:opacity-70"
+                    className="w-full flex items-center justify-center gap-2 text-slate-700 bg-slate-100 hover:bg-slate-200 py-2.5 rounded-lg font-medium transition-colors disabled:opacity-70"
                   >
                     {isSendingOdoo === cert.id ? (
                       <><Loader2 size={18} className="animate-spin" /> Procesando...</>

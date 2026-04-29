@@ -13,10 +13,15 @@ export default async function Home() {
     prisma.worker.count(),
     prisma.certification.findMany({ select: { importe: true } }),
     prisma.expense.findMany({ select: { importe: true, tipo: true, fecha: true } }),
-    prisma.project.findMany({ 
+    prisma.project.findMany({
       take: 4, 
       orderBy: { createdAt: 'desc' },
-      select: { id: true, cliente: true, presupuestoTotal: true } 
+      select: { 
+        id: true, 
+        cliente: true, 
+        presupuestoTotal: true,
+        expenses: { select: { importe: true } }
+      } 
     })
   ]);
 
@@ -47,6 +52,19 @@ export default async function Home() {
     }
   });
 
+  // Procesar obras para gráfico de Presupuesto vs Gastos
+  const obrasProcesadas = obrasDestacadas.map(obra => {
+    const totalGastosObra = obra.expenses.reduce((acc: number, g: any) => acc + (g.importe || 0), 0);
+    return {
+      name: obra.cliente.split(' ')[0] || 'Obra',
+      id: obra.id,
+      cliente: obra.cliente,
+      presupuestoTotal: obra.presupuestoTotal || 0,
+      totalGastosObra,
+      porcentajeGasto: obra.presupuestoTotal ? (totalGastosObra / obra.presupuestoTotal) * 100 : 0
+    };
+  });
+
   const dashboardData = {
     obrasCount,
     trabajadoresCount,
@@ -54,7 +72,7 @@ export default async function Home() {
     totalGastos,
     gastosPorTipo,
     chartData: Object.values(monthlyData),
-    obrasDestacadas
+    obrasDestacadas: obrasProcesadas
   };
 
   return <DashboardClient session={session} data={dashboardData} />;

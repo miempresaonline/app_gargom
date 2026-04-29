@@ -13,11 +13,18 @@ export default function ObrasClient({ initialObras }: { initialObras: any[] }) {
   const [error, setError] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState<number | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [sortBy, setSortBy] = useState('recientes');
 
   const filteredObras = initialObras.filter(obra => 
     obra.direccion.toLowerCase().includes(searchTerm.toLowerCase()) ||
     obra.cliente.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  ).sort((a, b) => {
+    if (sortBy === 'recientes') return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    if (sortBy === 'antiguas') return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+    if (sortBy === 'presupuesto_desc') return b.presupuestoTotal - a.presupuestoTotal;
+    if (sortBy === 'presupuesto_asc') return a.presupuestoTotal - b.presupuestoTotal;
+    return 0;
+  });
 
   const openCreateModal = () => {
     setEditingObra(null);
@@ -78,18 +85,32 @@ export default function ObrasClient({ initialObras }: { initialObras: any[] }) {
         </button>
       </div>
 
-      {/* Search Bar */}
-      <div className="relative max-w-md">
-        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-          <Search size={18} />
+      {/* Filters & Search */}
+      <div className="flex flex-col md:flex-row gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-100">
+        <div className="relative flex-1">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+            <Search size={18} />
+          </div>
+          <input
+            type="text"
+            placeholder="Buscar por cliente o dirección..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gargom-accent/50 shadow-sm"
+          />
         </div>
-        <input
-          type="text"
-          placeholder="Buscar por cliente o dirección..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gargom-accent/50 shadow-sm"
-        />
+        <div className="w-full md:w-64 shrink-0">
+          <select 
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+            className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gargom-accent/50 shadow-sm font-medium text-slate-600"
+          >
+            <option value="recientes">Más recientes</option>
+            <option value="antiguas">Más antiguas</option>
+            <option value="presupuesto_desc">Mayor presupuesto</option>
+            <option value="presupuesto_asc">Menor presupuesto</option>
+          </select>
+        </div>
       </div>
 
       {/* Grid */}

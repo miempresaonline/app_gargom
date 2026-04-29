@@ -132,8 +132,9 @@ export async function parseInvoiceWithGroq(base64Image: string) {
     });
 
     if (!response.ok) {
-      console.error('Groq Error:', await response.text());
-      return { error: 'Error al analizar la factura con IA' };
+      const errText = await response.text();
+      console.error('Groq Error:', errText);
+      return { error: `Error al analizar la factura con IA: ${errText}` };
     }
 
     const data = await response.json();

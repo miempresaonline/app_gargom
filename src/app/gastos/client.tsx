@@ -205,14 +205,18 @@ export default function GastosClient({
           {filteredGastos.map((gasto, index) => (
             <motion.div
               key={gasto.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              transition={{ delay: index * 0.05 }}
-              className="bg-white rounded-3xl p-5 relative overflow-hidden group shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 flex gap-5"
+              initial={{ opacity: 0, y: 30, rotateX: -5 }}
+              animate={{ opacity: 1, y: 0, rotateX: 0 }}
+              exit={{ opacity: 0, scale: 0.95, filter: 'blur(5px)' }}
+              transition={{ delay: index * 0.05, type: 'spring', stiffness: 200, damping: 20 }}
+              whileHover={{ y: -8, scale: 1.02, transition: { duration: 0.2 } }}
+              className="bg-white/80 backdrop-blur-xl rounded-[24px] p-6 relative overflow-hidden group shadow-lg shadow-slate-200/50 hover:shadow-2xl hover:shadow-gargom-accent/20 border border-slate-100 flex gap-5 transition-all duration-300"
             >
+              {/* Background Glow Effect */}
+              <div className="absolute inset-0 bg-gradient-to-br from-white/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 z-0 pointer-events-none" />
+              
               {/* Type Indicator */}
-              <div className={`w-2 h-full absolute left-0 top-0 ${gasto.tipo === 'GENERAL' ? 'bg-purple-500' : gasto.tipo === 'PERSONAL' ? 'bg-green-500' : 'bg-orange-500'}`} />
+              <div className={`w-2.5 h-full absolute left-0 top-0 transition-colors duration-500 ${gasto.tipo === 'GENERAL' ? 'bg-gradient-to-b from-purple-400 to-purple-600' : gasto.tipo === 'PERSONAL' ? 'bg-gradient-to-b from-emerald-400 to-emerald-600' : 'bg-gradient-to-b from-orange-400 to-orange-600'}`} />
 
               <div className="flex-1 pl-4 space-y-3">
                 <div className="flex justify-between items-start">
@@ -407,15 +411,32 @@ export default function GastosClient({
                             onChange={handleFileUpload}
                           />
                           <div 
-                            onClick={() => fileInputRef.current?.click()}
-                            className={`border-2 border-dashed border-slate-300 rounded-xl p-6 flex flex-col items-center justify-center bg-slate-50 transition-colors cursor-pointer ${isAnalyzing ? 'opacity-70 pointer-events-none' : 'hover:bg-slate-100 hover:border-gargom-accent text-slate-400'}`}
+                            onClick={() => !isAnalyzing && fileInputRef.current?.click()}
+                            className={`relative border-2 border-dashed border-slate-300 rounded-xl p-6 flex flex-col items-center justify-center bg-slate-50 transition-colors overflow-hidden ${isAnalyzing ? 'pointer-events-none border-gargom-accent/50' : 'hover:bg-slate-100 hover:border-gargom-accent cursor-pointer text-slate-400'}`}
                           >
                             {isAnalyzing ? (
-                              <>
-                                <Loader2 size={24} className="mb-2 animate-spin text-gargom-accent" />
-                                <span className="text-sm font-medium text-gargom-accent">La IA está leyendo la factura...</span>
-                                <span className="text-xs mt-1 text-slate-500">Esto puede tardar unos segundos</span>
-                              </>
+                              <div className="flex flex-col items-center justify-center relative w-full z-10 py-4">
+                                <div className="absolute inset-0 bg-gargom-accent/5 rounded-lg animate-pulse" />
+                                {/* Laser effect */}
+                                <motion.div 
+                                  className="absolute left-0 right-0 h-0.5 bg-gargom-accent shadow-[0_0_8px_2px_rgba(var(--color-gargom-accent),0.6)] z-20"
+                                  animate={{ top: ['0%', '100%', '0%'] }}
+                                  transition={{ duration: 2, ease: "linear", repeat: Infinity }}
+                                />
+                                <div className="relative flex flex-col items-center z-30 space-y-3">
+                                  <motion.div
+                                    animate={{ scale: [1, 1.1, 1] }}
+                                    transition={{ duration: 1.5, repeat: Infinity }}
+                                    className="bg-white p-3 rounded-full shadow-lg"
+                                  >
+                                    <FileUp size={28} className="text-gargom-accent" />
+                                  </motion.div>
+                                  <div className="flex flex-col items-center">
+                                    <span className="text-sm font-bold text-gargom-accent tracking-wide uppercase">IA Analizando...</span>
+                                    <span className="text-xs font-medium text-slate-500 mt-1">Extrayendo datos mágicamente</span>
+                                  </div>
+                                </div>
+                              </div>
                             ) : (
                               <>
                                 <FileUp size={24} className="mb-2" />

@@ -2,7 +2,7 @@
 
 import { useActionState, useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Plus, X, Package, Calendar, Landmark, HardHat, Pickaxe, Loader2, Trash2, Users, Copy, Mail, Phone } from 'lucide-react';
+import { ArrowLeft, Plus, X, Package, Calendar, Landmark, HardHat, Pickaxe, Loader2, Trash2, Users, Copy, Mail, Phone, User } from 'lucide-react';
 import Link from 'next/link';
 import { createGastoObra, deleteGastoObra } from './actions';
 

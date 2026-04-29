@@ -109,7 +109,7 @@ export async function parseInvoiceWithGroq(base64Image: string) {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: "llama-3.2-11b-vision-preview",
+        model: "llama-3.2-90b-vision-preview",
         messages: [
           {
             role: "user",

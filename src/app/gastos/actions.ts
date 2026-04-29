@@ -45,6 +45,49 @@ export async function createGasto(prevState: any, formData: FormData) {
   }
 }
 
+export async function updateGasto(prevState: any, formData: FormData) {
+  const id = parseInt(formData.get('id') as string);
+  const tipo = formData.get('tipo') as ExpenseType;
+  const projectId = parseInt(formData.get('projectId') as string);
+  
+  if (isNaN(id) || !tipo || isNaN(projectId)) {
+    return { error: 'Faltan datos obligatorios (ID, Tipo y Obra)' };
+  }
+
+  const importe = parseFloat(formData.get('importe') as string);
+  const concepto = formData.get('concepto') as string || null;
+  const fecha = formData.get('fecha') ? new Date(formData.get('fecha') as string) : null;
+  const numero = formData.get('numero') as string || null;
+  const fechaVencimiento = formData.get('fechaVencimiento') ? new Date(formData.get('fechaVencimiento') as string) : null;
+  const bankId = formData.get('bankId') ? parseInt(formData.get('bankId') as string) : null;
+  const workerId = formData.get('workerId') ? parseInt(formData.get('workerId') as string) : null;
+  const horas = formData.get('horas') ? parseFloat(formData.get('horas') as string) : null;
+  const observaciones = formData.get('observaciones') as string || null;
+
+  try {
+    await prisma.expense.update({
+      where: { id },
+      data: {
+        tipo,
+        projectId,
+        concepto,
+        importe: isNaN(importe) ? null : importe,
+        fecha,
+        numero,
+        fechaVencimiento,
+        bankId,
+        workerId,
+        horas,
+        observaciones
+      },
+    });
+    revalidatePath('/gastos');
+    return { success: true };
+  } catch (error) {
+    return { error: 'Error al actualizar el gasto' };
+  }
+}
+
 export async function deleteGasto(id: number) {
   try {
     await prisma.expense.delete({

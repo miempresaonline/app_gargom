@@ -1,9 +1,9 @@
 'use client';
 
-import { useActionState, useState, useEffect } from 'react';
+import { useState, useTransition, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, X, Package, FileText, Calendar, Building, Landmark, Pickaxe, HardHat, FileUp, Loader2, Trash2, Users, Copy } from 'lucide-react';
-import { createGasto, deleteGasto } from './actions';
+import { Plus, X, Package, FileText, Calendar, Building, Landmark, Pickaxe, HardHat, FileUp, Loader2, Trash2, Users, Copy, Search, Edit2 } from 'lucide-react';
+import { createGasto, updateGasto, deleteGasto } from './actions';
 
 export default function GastosClient({ 
   initialGastos, obras, bancos, trabajadores 
@@ -11,9 +11,13 @@ export default function GastosClient({
   initialGastos: any[], obras: any[], bancos: any[], trabajadores: any[] 
 }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingGasto, setEditingGasto] = useState<any>(null);
   const [selectedType, setSelectedType] = useState<string>('GENERAL');
-  const [state, formAction, isPending] = useActionState(createGasto, null);
+  const [isPending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState<number | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterType, setFilterType] = useState<string>('ALL');
 
   // Form state for Personal auto-calculation
   const [selectedWorkerId, setSelectedWorkerId] = useState<string>('');
@@ -31,11 +35,49 @@ export default function GastosClient({
     }
   }, [selectedWorkerId, horas, trabajadores]);
 
-  useEffect(() => {
-    if (state?.success) {
-      setIsModalOpen(false);
+  const filteredGastos = initialGastos.filter(gasto => {
+    const matchesSearch = 
+      (gasto.concepto?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+      (gasto.project?.cliente?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+      (gasto.numero?.toLowerCase() || '').includes(searchTerm.toLowerCase());
+    const matchesType = filterType === 'ALL' || gasto.tipo === filterType;
+    return matchesSearch && matchesType;
+  });
+
+  const openCreateModal = () => {
+    setEditingGasto(null);
+    setSelectedType('GENERAL');
+    setSelectedWorkerId('');
+    setHoras('');
+    setError(null);
+    setIsModalOpen(true);
+  };
+
+  const openEditModal = (gasto: any) => {
+    setEditingGasto(gasto);
+    setSelectedType(gasto.tipo);
+    if (gasto.tipo === 'PERSONAL') {
+      setSelectedWorkerId(gasto.workerId?.toString() || '');
+      setHoras(gasto.horas?.toString() || '');
     }
-  }, [state]);
+    setError(null);
+    setIsModalOpen(true);
+  };
+
+  const handleClone = (gasto: any) => {
+    setEditingGasto(null); // It's a new one based on old
+    setSelectedType(gasto.tipo);
+    if (gasto.tipo === 'PERSONAL') {
+      setSelectedWorkerId(gasto.workerId?.toString() || '');
+      setHoras(gasto.horas?.toString() || '');
+    }
+    setError(null);
+    setIsModalOpen(true);
+    // Note: To perfectly prefill other fields in a non-controlled form when cloning,
+    // we'd need to either make the form controlled or use defaultValue cleverly.
+    // For now we set editingGasto to a "clone" mode object.
+    setEditingGasto({ ...gasto, id: undefined }); 
+  };
 
   const handleDelete = async (id: number) => {
     if (confirm('¿Seguro que deseas eliminar este gasto?')) {
@@ -45,29 +87,32 @@ export default function GastosClient({
     }
   };
 
-  const handleClone = async (gasto: any) => {
-    // We will do a manual fetch call since cloning is complex and using formData directly is easier
-    const formData = new FormData();
-    formData.append('tipo', gasto.tipo);
-    formData.append('projectId', gasto.projectId.toString());
-    if (gasto.concepto) formData.append('concepto', gasto.concepto);
-    if (gasto.importe) formData.append('importe', gasto.importe.toString());
-    if (gasto.fecha) formData.append('fecha', new Date(gasto.fecha).toISOString().split('T')[0]);
-    if (gasto.numero) formData.append('numero', gasto.numero);
-    if (gasto.fechaVencimiento) formData.append('fechaVencimiento', new Date(gasto.fechaVencimiento).toISOString().split('T')[0]);
-    if (gasto.bankId) formData.append('bankId', gasto.bankId.toString());
-    if (gasto.workerId) formData.append('workerId', gasto.workerId.toString());
-    if (gasto.horas) formData.append('horas', gasto.horas.toString());
-    if (gasto.observaciones) formData.append('observaciones', gasto.observaciones);
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setError(null);
+    const formData = new FormData(e.currentTarget);
+    
+    // Si es tipo PERSONAL, el importe está deshabilitado en el form o es readOnly,
+    // nos aseguramos de enviarlo calculándolo o habilitándolo.
+    if (selectedType === 'PERSONAL') {
+      formData.set('importe', personalImporte.toString());
+    }
 
-    // Call the server action directly using startTransition (simulated via formAction)
-    // Actually, to make it simple we can just set the modal to open with these values prefilled,
-    // or call the server action directly if we import it. Since `createGasto` takes (prevState, formData),
-    // we can't easily call it directly here. We'll pre-fill the form!
-    setSelectedType(gasto.tipo);
-    setIsModalOpen(true);
-    // Note: A full clone without pre-fill requires a separate server action like cloneGasto(id).
-    // For now we just open the modal. A true clone could be added later.
+    startTransition(async () => {
+      let result;
+      if (editingGasto && editingGasto.id) {
+        formData.append('id', editingGasto.id.toString());
+        result = await updateGasto(null, formData);
+      } else {
+        result = await createGasto(null, formData);
+      }
+
+      if (result.error) {
+        setError(result.error);
+      } else {
+        setIsModalOpen(false);
+      }
+    });
   };
 
   return (
@@ -79,18 +124,48 @@ export default function GastosClient({
           <p className="text-slate-500 mt-1">Gestión de compras, facturas, servicios y horas de personal</p>
         </div>
         <button
-          onClick={() => { setSelectedType('GENERAL'); setIsModalOpen(true); }}
-          className="bg-gargom-accent hover:bg-blue-600 text-white px-5 py-2.5 rounded-xl font-medium flex items-center gap-2 transition-all shadow-lg shadow-gargom-accent/20 hover:shadow-xl hover:shadow-gargom-accent/30 hover:-translate-y-0.5"
+          onClick={openCreateModal}
+          className="bg-gargom-accent hover:bg-blue-600 text-white px-5 py-2.5 rounded-xl font-medium flex items-center gap-2 transition-all shadow-lg shadow-gargom-accent/20 hover:shadow-xl hover:-translate-y-0.5"
         >
           <Plus size={20} strokeWidth={2.5} />
           <span>Registrar Gasto</span>
         </button>
       </div>
 
+      {/* Filters and Search */}
+      <div className="flex flex-col md:flex-row gap-4">
+        <div className="relative flex-1">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+            <Search size={18} />
+          </div>
+          <input
+            type="text"
+            placeholder="Buscar por concepto, cliente o número de factura..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gargom-accent/50 shadow-sm"
+          />
+        </div>
+        <div className="w-full md:w-64">
+          <select 
+            value={filterType}
+            onChange={(e) => setFilterType(e.target.value)}
+            className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gargom-accent/50 shadow-sm font-medium text-slate-600"
+          >
+            <option value="ALL">Todos los tipos</option>
+            <option value="GENERAL">General</option>
+            <option value="INDUSTRIAL">Industrial</option>
+            <option value="MATERIALES">Materiales</option>
+            <option value="SERVICIOS">Servicios</option>
+            <option value="PERSONAL">Personal</option>
+          </select>
+        </div>
+      </div>
+
       {/* Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <AnimatePresence>
-          {initialGastos.map((gasto, index) => (
+          {filteredGastos.map((gasto, index) => (
             <motion.div
               key={gasto.id}
               initial={{ opacity: 0, y: 20 }}
@@ -151,8 +226,11 @@ export default function GastosClient({
 
               {/* Action Buttons */}
               <div className="flex flex-col gap-2 justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                <button onClick={() => openEditModal(gasto)} className="p-2 bg-slate-50 text-slate-500 rounded-lg hover:bg-slate-200 transition shadow-sm border border-slate-200" title="Editar">
+                  <Edit2 size={16} />
+                </button>
                 {gasto.tipo === 'PERSONAL' && (
-                  <button onClick={() => handleClone(gasto)} className="p-2 bg-slate-50 text-slate-500 rounded-lg hover:bg-slate-100 transition shadow-sm border border-slate-200" title="Clonar Gasto">
+                  <button onClick={() => handleClone(gasto)} className="p-2 bg-slate-50 text-slate-500 rounded-lg hover:bg-slate-200 transition shadow-sm border border-slate-200" title="Clonar Gasto">
                     <Copy size={16} />
                   </button>
                 )}
@@ -163,9 +241,15 @@ export default function GastosClient({
             </motion.div>
           ))}
         </AnimatePresence>
+
+        {filteredGastos.length === 0 && (
+          <div className="col-span-full py-12 text-center bg-white rounded-3xl border border-slate-100">
+            <p className="text-slate-500 font-medium">No se han encontrado gastos que coincidan.</p>
+          </div>
+        )}
       </div>
 
-      {/* Create Modal */}
+      {/* Create / Edit Modal */}
       <AnimatePresence>
         {isModalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -186,7 +270,7 @@ export default function GastosClient({
               <div className="p-6 md:p-8 flex-1 overflow-y-auto custom-scrollbar">
                 <div className="flex justify-between items-center mb-6">
                   <h2 className="text-2xl font-bold text-gargom-blue flex items-center gap-2">
-                    <Package size={24} className="text-gargom-accent" /> Registrar Gasto
+                    <Package size={24} className="text-gargom-accent" /> {editingGasto && editingGasto.id ? 'Editar Gasto' : 'Registrar Gasto'}
                   </h2>
                   <button 
                     onClick={() => setIsModalOpen(false)}
@@ -196,7 +280,7 @@ export default function GastosClient({
                   </button>
                 </div>
 
-                <form action={formAction} className="space-y-6">
+                <form onSubmit={handleSubmit} className="space-y-6">
                   {/* Tipo y Obra */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-1">
@@ -219,6 +303,7 @@ export default function GastosClient({
                       <select 
                         name="projectId" 
                         required
+                        defaultValue={editingGasto?.projectId}
                         className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gargom-accent/50 transition-all text-slate-700"
                       >
                         <option value="">Selecciona una obra...</option>
@@ -235,36 +320,40 @@ export default function GastosClient({
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-1 md:col-span-2">
                           <label className="text-sm font-medium text-slate-700 ml-1">Concepto *</label>
-                          <input type="text" name="concepto" required className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl" placeholder="Ej. Material de oficina" />
+                          <input type="text" name="concepto" defaultValue={editingGasto?.concepto} required className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl" placeholder="Ej. Material de oficina" />
                         </div>
                         <div className="space-y-1">
                           <label className="text-sm font-medium text-slate-700 ml-1">Importe (€) *</label>
-                          <input type="number" name="importe" step="0.01" required className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl" placeholder="0.00" />
+                          <input type="number" name="importe" defaultValue={editingGasto?.importe} step="0.01" required className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl" placeholder="0.00" />
                         </div>
                       </div>
                     )}
 
                     {['INDUSTRIAL', 'MATERIALES', 'SERVICIOS'].includes(selectedType) && (
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-1 md:col-span-2">
+                          <label className="text-sm font-medium text-slate-700 ml-1">Concepto</label>
+                          <input type="text" name="concepto" defaultValue={editingGasto?.concepto} className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl" placeholder="Descripción breve" />
+                        </div>
                         <div className="space-y-1">
                           <label className="text-sm font-medium text-slate-700 ml-1">Número de Factura</label>
-                          <input type="text" name="numero" required className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl" placeholder="F-2024-001" />
+                          <input type="text" name="numero" defaultValue={editingGasto?.numero} required className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl" placeholder="F-2024-001" />
                         </div>
                         <div className="space-y-1">
                           <label className="text-sm font-medium text-slate-700 ml-1">Importe (€) *</label>
-                          <input type="number" name="importe" step="0.01" required className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl" placeholder="0.00" />
+                          <input type="number" name="importe" defaultValue={editingGasto?.importe} step="0.01" required className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl" placeholder="0.00" />
                         </div>
                         <div className="space-y-1">
                           <label className="text-sm font-medium text-slate-700 ml-1">Fecha de Factura</label>
-                          <input type="date" name="fecha" required className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl" />
+                          <input type="date" name="fecha" defaultValue={editingGasto?.fecha ? new Date(editingGasto.fecha).toISOString().split('T')[0] : ''} required className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl" />
                         </div>
                         <div className="space-y-1">
                           <label className="text-sm font-medium text-slate-700 ml-1">Fecha de Vencimiento</label>
-                          <input type="date" name="fechaVencimiento" className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl" />
+                          <input type="date" name="fechaVencimiento" defaultValue={editingGasto?.fechaVencimiento ? new Date(editingGasto.fechaVencimiento).toISOString().split('T')[0] : ''} className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl" />
                         </div>
                         <div className="space-y-1 md:col-span-2">
                           <label className="text-sm font-medium text-slate-700 ml-1">Banco Asociado</label>
-                          <select name="bankId" className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl">
+                          <select name="bankId" defaultValue={editingGasto?.bankId} className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl">
                             <option value="">Selecciona un banco...</option>
                             {bancos.map(b => (
                               <option key={b.id} value={b.id}>{b.nombre} - {b.numeroCuenta}</option>
@@ -286,7 +375,7 @@ export default function GastosClient({
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-1">
                           <label className="text-sm font-medium text-slate-700 ml-1">Fecha (Día)</label>
-                          <input type="date" name="fecha" required className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl" />
+                          <input type="date" name="fecha" defaultValue={editingGasto?.fecha ? new Date(editingGasto.fecha).toISOString().split('T')[0] : ''} required className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl" />
                         </div>
                         <div className="space-y-1">
                           <label className="text-sm font-medium text-slate-700 ml-1">Trabajador *</label>
@@ -320,7 +409,6 @@ export default function GastosClient({
                           <label className="text-sm font-medium text-slate-700 ml-1">Importe Calculado (€)</label>
                           <input 
                             type="number" 
-                            name="importe" 
                             value={personalImporte} 
                             readOnly 
                             className="w-full px-4 py-2.5 bg-slate-100 border border-slate-200 rounded-xl font-bold text-gargom-accent" 
@@ -328,19 +416,19 @@ export default function GastosClient({
                         </div>
                         <div className="space-y-1 md:col-span-2">
                           <label className="text-sm font-medium text-slate-700 ml-1">Observaciones</label>
-                          <input type="text" name="observaciones" className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl" placeholder="Detalles de la jornada..." />
+                          <input type="text" name="observaciones" defaultValue={editingGasto?.observaciones} className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl" placeholder="Detalles de la jornada..." />
                         </div>
                       </div>
                     )}
                   </div>
 
-                  {state?.error && (
+                  {error && (
                     <div className="p-3 bg-red-50 border border-red-100 rounded-xl text-red-600 text-sm font-medium">
-                      {state.error}
+                      {error}
                     </div>
                   )}
 
-                  <div className="pt-4 border-t border-slate-100 flex justify-end gap-3">
+                  <div className="pt-4 border-t border-slate-100 flex justify-end gap-3 sticky bottom-0 bg-white pb-2">
                     <button type="button" onClick={() => setIsModalOpen(false)} className="px-6 py-3 rounded-xl font-medium text-slate-600 hover:bg-slate-100 transition-colors">
                       Cancelar
                     </button>
@@ -349,7 +437,7 @@ export default function GastosClient({
                       disabled={isPending}
                       className="bg-gargom-blue hover:bg-[#021033] text-white px-8 py-3 rounded-xl font-medium flex items-center justify-center gap-2 transition-all shadow-lg shadow-gargom-blue/20 hover:shadow-xl hover:-translate-y-0.5 disabled:opacity-70 disabled:pointer-events-none"
                     >
-                      {isPending ? <Loader2 size={20} className="animate-spin" /> : <span>Guardar Gasto</span>}
+                      {isPending ? <Loader2 size={20} className="animate-spin" /> : <span>{editingGasto && editingGasto.id ? 'Guardar Cambios' : 'Registrar Gasto'}</span>}
                     </button>
                   </div>
                 </form>

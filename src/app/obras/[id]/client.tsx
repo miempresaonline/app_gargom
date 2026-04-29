@@ -102,29 +102,62 @@ export default function ObraDetailClient({
       </div>
 
       {/* Info extra */}
-      <div className="bg-slate-50 rounded-3xl p-6 border border-slate-100 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {obra.arquitecto && (
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-white rounded-lg shadow-sm text-gargom-blue"><HardHat size={18} /></div>
-            <div><p className="text-xs text-slate-500">Arquitecto</p><p className="font-medium text-slate-800">{obra.arquitecto}</p></div>
+      <div className="bg-slate-50 rounded-3xl p-6 border border-slate-100 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {/* Cliente Info */}
+        <div className="bg-white p-4 rounded-2xl shadow-sm space-y-3">
+          <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2 mb-2">
+            <User size={14} /> Cliente
+          </h4>
+          <p className="font-bold text-slate-800">{obra.cliente}</p>
+          {obra.clienteTelefono && (
+            <div className="flex items-center gap-2 text-sm text-slate-600">
+              <Phone size={14} className="text-slate-400" /> {obra.clienteTelefono}
+            </div>
+          )}
+          {obra.clienteCorreo && (
+            <div className="flex items-center gap-2 text-sm text-slate-600">
+              <Mail size={14} className="text-slate-400" /> <span className="truncate">{obra.clienteCorreo}</span>
+            </div>
+          )}
+        </div>
+
+        {/* Arquitecto Info */}
+        {(obra.arquitecto || obra.arquitectoTelefono || obra.arquitectoCorreo) && (
+          <div className="bg-white p-4 rounded-2xl shadow-sm space-y-3">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2 mb-2">
+              <HardHat size={14} /> Arquitecto
+            </h4>
+            <p className="font-bold text-slate-800">{obra.arquitecto || 'No especificado'}</p>
+            {obra.arquitectoTelefono && (
+              <div className="flex items-center gap-2 text-sm text-slate-600">
+                <Phone size={14} className="text-slate-400" /> {obra.arquitectoTelefono}
+              </div>
+            )}
+            {obra.arquitectoCorreo && (
+              <div className="flex items-center gap-2 text-sm text-slate-600">
+                <Mail size={14} className="text-slate-400" /> <span className="truncate">{obra.arquitectoCorreo}</span>
+              </div>
+            )}
           </div>
         )}
-        {obra.aparejador && (
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-white rounded-lg shadow-sm text-gargom-blue"><Pickaxe size={18} /></div>
-            <div><p className="text-xs text-slate-500">Aparejador</p><p className="font-medium text-slate-800">{obra.aparejador}</p></div>
-          </div>
-        )}
-        {obra.telefono && (
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-white rounded-lg shadow-sm text-gargom-blue"><Phone size={18} /></div>
-            <div><p className="text-xs text-slate-500">Teléfono</p><p className="font-medium text-slate-800">{obra.telefono}</p></div>
-          </div>
-        )}
-        {obra.correo && (
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-white rounded-lg shadow-sm text-gargom-blue"><Mail size={18} /></div>
-            <div><p className="text-xs text-slate-500">Correo</p><p className="font-medium text-slate-800 truncate">{obra.correo}</p></div>
+
+        {/* Aparejador Info */}
+        {(obra.aparejador || obra.aparejadorTelefono || obra.aparejadorCorreo) && (
+          <div className="bg-white p-4 rounded-2xl shadow-sm space-y-3">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2 mb-2">
+              <Pickaxe size={14} /> Aparejador
+            </h4>
+            <p className="font-bold text-slate-800">{obra.aparejador || 'No especificado'}</p>
+            {obra.aparejadorTelefono && (
+              <div className="flex items-center gap-2 text-sm text-slate-600">
+                <Phone size={14} className="text-slate-400" /> {obra.aparejadorTelefono}
+              </div>
+            )}
+            {obra.aparejadorCorreo && (
+              <div className="flex items-center gap-2 text-sm text-slate-600">
+                <Mail size={14} className="text-slate-400" /> <span className="truncate">{obra.aparejadorCorreo}</span>
+              </div>
+            )}
           </div>
         )}
       </div>

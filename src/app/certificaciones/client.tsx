@@ -1,21 +1,36 @@
 'use client';
 
-import { useActionState, useState, useEffect } from 'react';
+import { useState, useTransition } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, X, FileCheck, Building, Hash, Loader2, Trash2, ArrowUpRight, CheckCircle2 } from 'lucide-react';
-import { createCertification, deleteCertification, sendToOdoo } from './actions';
+import { Plus, X, FileCheck, Building, Hash, Loader2, Trash2, ArrowUpRight, CheckCircle2, Search, Edit2 } from 'lucide-react';
+import { createCertification, updateCertification, deleteCertification, sendToOdoo } from './actions';
 
 export default function CertificacionesClient({ initialCertificaciones, obras }: { initialCertificaciones: any[], obras: any[] }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [state, formAction, isPending] = useActionState(createCertification, null);
+  const [editingCert, setEditingCert] = useState<any>(null);
+  const [isPending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState<number | null>(null);
   const [isSendingOdoo, setIsSendingOdoo] = useState<number | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
 
-  useEffect(() => {
-    if (state?.success) {
-      setIsModalOpen(false);
-    }
-  }, [state]);
+  const filteredCertificaciones = initialCertificaciones.filter(cert => 
+    (cert.concepto?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+    (cert.project?.direccion?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+    (cert.numero?.toLowerCase() || '').includes(searchTerm.toLowerCase())
+  );
+
+  const openCreateModal = () => {
+    setEditingCert(null);
+    setError(null);
+    setIsModalOpen(true);
+  };
+
+  const openEditModal = (cert: any) => {
+    setEditingCert(cert);
+    setError(null);
+    setIsModalOpen(true);
+  };
 
   const handleDelete = async (id: number) => {
     if (confirm('¿Seguro que deseas eliminar esta certificación?')) {
@@ -31,6 +46,28 @@ export default function CertificacionesClient({ initialCertificaciones, obras }:
     setIsSendingOdoo(null);
   };
 
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setError(null);
+    const formData = new FormData(e.currentTarget);
+    
+    startTransition(async () => {
+      let result;
+      if (editingCert && editingCert.id) {
+        formData.append('id', editingCert.id.toString());
+        result = await updateCertification(null, formData);
+      } else {
+        result = await createCertification(null, formData);
+      }
+
+      if (result.error) {
+        setError(result.error);
+      } else {
+        setIsModalOpen(false);
+      }
+    });
+  };
+
   return (
     <div className="p-6 md:p-8 w-full max-w-7xl mx-auto space-y-8">
       {/* Header */}
@@ -40,7 +77,7 @@ export default function CertificacionesClient({ initialCertificaciones, obras }:
           <p className="text-slate-500 mt-1">Gestión y envío de certificaciones a Odoo</p>
         </div>
         <button
-          onClick={() => setIsModalOpen(true)}
+          onClick={openCreateModal}
           className="bg-gargom-accent hover:bg-blue-600 text-white px-5 py-2.5 rounded-xl font-medium flex items-center gap-2 transition-all shadow-lg shadow-gargom-accent/20 hover:shadow-xl hover:shadow-gargom-accent/30 hover:-translate-y-0.5"
         >
           <Plus size={20} strokeWidth={2.5} />
@@ -48,10 +85,24 @@ export default function CertificacionesClient({ initialCertificaciones, obras }:
         </button>
       </div>
 
+      {/* Search Bar */}
+      <div className="relative max-w-md">
+        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+          <Search size={18} />
+        </div>
+        <input
+          type="text"
+          placeholder="Buscar por concepto, obra o número..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gargom-accent/50 shadow-sm"
+        />
+      </div>
+
       {/* Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <AnimatePresence>
-          {initialCertificaciones.map((cert, index) => (
+          {filteredCertificaciones.map((cert, index) => (
             <motion.div
               key={cert.id}
               initial={{ opacity: 0, y: 20 }}
@@ -63,7 +114,13 @@ export default function CertificacionesClient({ initialCertificaciones, obras }:
               {/* Document Header Pattern */}
               <div className="absolute top-0 inset-x-0 h-2 bg-gradient-to-r from-gargom-blue via-gargom-accent to-gargom-blue" />
               
-              <div className="absolute top-4 right-4 z-20 opacity-0 group-hover:opacity-100 transition-opacity">
+              {/* Action Buttons */}
+              <div className="absolute top-4 right-4 z-20 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                {!cert.enviadaOdoo && (
+                  <button onClick={() => openEditModal(cert)} className="p-2 bg-slate-50 text-slate-500 rounded-lg hover:bg-slate-200 transition shadow-sm border border-slate-200" title="Editar">
+                    <Edit2 size={16} />
+                  </button>
+                )}
                 <button onClick={() => handleDelete(cert.id)} disabled={isDeleting === cert.id} className="p-2 bg-red-50 text-red-500 rounded-lg hover:bg-red-100 transition shadow-sm border border-red-100">
                   {isDeleting === cert.id ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
                 </button>
@@ -73,7 +130,7 @@ export default function CertificacionesClient({ initialCertificaciones, obras }:
                 <div className="w-10 h-10 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
                   <FileCheck size={20} />
                 </div>
-                <div className="flex-1">
+                <div className="flex-1 pr-16">
                   <h3 className="font-bold text-lg text-slate-800 line-clamp-1">{cert.concepto}</h3>
                   <div className="flex items-center gap-1.5 text-xs text-slate-500 font-mono">
                     <Hash size={12} /> {cert.numero}
@@ -118,9 +175,15 @@ export default function CertificacionesClient({ initialCertificaciones, obras }:
             </motion.div>
           ))}
         </AnimatePresence>
+
+        {filteredCertificaciones.length === 0 && (
+          <div className="col-span-full py-12 text-center bg-white rounded-3xl border border-slate-100">
+            <p className="text-slate-500 font-medium">No se han encontrado certificaciones.</p>
+          </div>
+        )}
       </div>
 
-      {/* Create Modal */}
+      {/* Create / Edit Modal */}
       <AnimatePresence>
         {isModalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -141,7 +204,7 @@ export default function CertificacionesClient({ initialCertificaciones, obras }:
               <div className="p-6 md:p-8">
                 <div className="flex justify-between items-center mb-6">
                   <h2 className="text-2xl font-bold text-gargom-blue flex items-center gap-2">
-                    <FileCheck size={24} className="text-gargom-accent" /> Nueva Certificación
+                    <FileCheck size={24} className="text-gargom-accent" /> {editingCert ? 'Editar Certificación' : 'Nueva Certificación'}
                   </h2>
                   <button 
                     onClick={() => setIsModalOpen(false)}
@@ -151,12 +214,13 @@ export default function CertificacionesClient({ initialCertificaciones, obras }:
                   </button>
                 </div>
 
-                <form action={formAction} className="space-y-5">
+                <form onSubmit={handleSubmit} className="space-y-5">
                   <div className="space-y-1">
                     <label className="text-sm font-medium text-slate-700 ml-1">Obra Asociada *</label>
                     <select 
                       name="projectId" 
                       required
+                      defaultValue={editingCert?.projectId || ''}
                       className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gargom-accent/50 transition-all text-slate-700"
                     >
                       <option value="">Selecciona una obra...</option>
@@ -173,6 +237,7 @@ export default function CertificacionesClient({ initialCertificaciones, obras }:
                         type="text"
                         name="numero"
                         required
+                        defaultValue={editingCert?.numero}
                         className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gargom-accent/50 transition-all font-mono"
                         placeholder="CERT-001"
                       />
@@ -184,6 +249,7 @@ export default function CertificacionesClient({ initialCertificaciones, obras }:
                         name="importe"
                         step="0.01"
                         required
+                        defaultValue={editingCert?.importe}
                         className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gargom-accent/50 transition-all font-bold text-gargom-accent"
                         placeholder="0.00"
                       />
@@ -196,14 +262,15 @@ export default function CertificacionesClient({ initialCertificaciones, obras }:
                       type="text"
                       name="concepto"
                       required
+                      defaultValue={editingCert?.concepto}
                       className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gargom-accent/50 transition-all"
                       placeholder="Certificación fase 1"
                     />
                   </div>
 
-                  {state?.error && (
+                  {error && (
                     <div className="p-3 bg-red-50 border border-red-100 rounded-xl text-red-600 text-sm font-medium">
-                      {state.error}
+                      {error}
                     </div>
                   )}
 
@@ -213,7 +280,7 @@ export default function CertificacionesClient({ initialCertificaciones, obras }:
                       disabled={isPending}
                       className="w-full bg-gargom-blue hover:bg-[#021033] text-white py-3.5 rounded-2xl font-medium flex items-center justify-center gap-2 transition-all shadow-lg shadow-gargom-blue/20 hover:shadow-xl hover:-translate-y-0.5 disabled:opacity-70 disabled:pointer-events-none"
                     >
-                      {isPending ? <Loader2 size={20} className="animate-spin" /> : <span>Guardar Certificación</span>}
+                      {isPending ? <Loader2 size={20} className="animate-spin" /> : <span>{editingCert ? 'Guardar Cambios' : 'Guardar Certificación'}</span>}
                     </button>
                   </div>
                 </form>

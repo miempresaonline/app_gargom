@@ -24,6 +24,29 @@ export async function createCertification(prevState: any, formData: FormData) {
   }
 }
 
+export async function updateCertification(prevState: any, formData: FormData) {
+  const id = parseInt(formData.get('id') as string);
+  const projectId = parseInt(formData.get('projectId') as string);
+  const importe = parseFloat(formData.get('importe') as string);
+  const numero = formData.get('numero') as string;
+  const concepto = formData.get('concepto') as string;
+
+  if (isNaN(id) || isNaN(projectId) || isNaN(importe) || !numero || !concepto) {
+    return { error: 'Por favor, rellena todos los campos correctamente' };
+  }
+
+  try {
+    await prisma.certification.update({
+      where: { id },
+      data: { projectId, importe, numero, concepto },
+    });
+    revalidatePath('/certificaciones');
+    return { success: true };
+  } catch (error) {
+    return { error: 'Error al actualizar la certificación' };
+  }
+}
+
 export async function deleteCertification(id: number) {
   try {
     await prisma.certification.delete({

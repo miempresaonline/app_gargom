@@ -21,11 +21,17 @@ model Project {
   id               Int       @id @default(autoincrement())
   presupuestoTotal Float
   direccion        String
-  arquitecto       String?
-  aparejador       String?
-  cliente          String
-  correo           String?
-  telefono         String?
+  arquitecto         String?
+  arquitectoCorreo   String?
+  arquitectoTelefono String?
+  
+  aparejador         String?
+  aparejadorCorreo   String?
+  aparejadorTelefono String?
+  
+  cliente            String
+  clienteCorreo      String?
+  clienteTelefono    String?
   observaciones    String?   @db.Text
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt

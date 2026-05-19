@@ -3,6 +3,7 @@
 import { usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { Menu, X } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export default function LayoutWrapper({ 
   children, 
@@ -61,8 +62,19 @@ export default function LayoutWrapper({
       )}
 
       {/* Main Content */}
-      <main className="flex-1 md:ml-64 p-4 md:p-8 min-h-screen bg-slate-50 mt-16 md:mt-0 transition-all duration-300 w-full overflow-x-hidden">
-        {children}
+      <main className="flex-1 md:ml-64 p-4 md:p-8 min-h-screen bg-slate-50 mt-16 md:mt-0 transition-all duration-300 w-full overflow-x-hidden relative">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={pathname}
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -15 }}
+            transition={{ duration: 0.3, ease: 'easeInOut' }}
+            className="w-full"
+          >
+            {children}
+          </motion.div>
+        </AnimatePresence>
       </main>
     </>
   );

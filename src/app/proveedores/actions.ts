@@ -6,14 +6,16 @@ import { revalidatePath } from 'next/cache';
 export async function createSupplier(prevState: any, formData: FormData) {
   const nombre = formData.get('nombre') as string;
   const correo = formData.get('correo') as string;
+  const cif = formData.get('cif') as string;
+  const telefono = formData.get('telefono') as string;
 
-  if (!nombre) {
-    return { error: 'El nombre es obligatorio' };
+  if (!nombre || !cif || !telefono) {
+    return { error: 'Los campos Nombre, CIF y Teléfono son obligatorios' };
   }
 
   try {
     await prisma.supplier.create({
-      data: { nombre, correo },
+      data: { nombre, correo, cif, telefono },
     });
     revalidatePath('/proveedores');
     return { success: true };
@@ -22,11 +24,15 @@ export async function createSupplier(prevState: any, formData: FormData) {
   }
 }
 
-export async function updateSupplier(id: number, nombre: string, correo: string) {
+export async function updateSupplier(id: number, nombre: string, correo: string, cif: string, telefono: string) {
+  if (!nombre || !cif || !telefono) {
+    return { error: 'Los campos Nombre, CIF y Teléfono son obligatorios' };
+  }
+  
   try {
     await prisma.supplier.update({
       where: { id },
-      data: { nombre, correo },
+      data: { nombre, correo, cif, telefono },
     });
     revalidatePath('/proveedores');
     return { success: true };

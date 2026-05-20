@@ -2,9 +2,11 @@
 
 import { useActionState, useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Plus, X, Package, Calendar, Landmark, HardHat, Pickaxe, Loader2, Trash2, Users, Copy, Mail, Phone, User } from 'lucide-react';
+import { ArrowLeft, Plus, X, Package, Calendar, Landmark, HardHat, Pickaxe, Loader2, Trash2, Users, Copy, Mail, Phone, User, FileCheck, Download, Hash } from 'lucide-react';
 import Link from 'next/link';
-import { createGastoObra, deleteGastoObra } from './actions';
+import { createGastoObra, deleteGastoObra, createCertification } from './actions';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 export default function ObraDetailClient({ 
   obra, bancos, trabajadores 
@@ -15,6 +17,10 @@ export default function ObraDetailClient({
   const [selectedType, setSelectedType] = useState<string>('GENERAL');
   const [state, formAction, isPending] = useActionState(createGastoObra, null);
   const [isDeleting, setIsDeleting] = useState<number | null>(null);
+
+  const [isCertModalOpen, setIsCertModalOpen] = useState(false);
+  const [certState, certFormAction, isCertPending] = useActionState(createCertification, null);
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState<number | null>(null);
 
   const [selectedWorkerId, setSelectedWorkerId] = useState<string>('');
   const [horas, setHoras] = useState<string>('');
@@ -36,6 +42,39 @@ export default function ObraDetailClient({
       setIsModalOpen(false);
     }
   }, [state]);
+
+  useEffect(() => {
+    if (certState?.success) {
+      setIsCertModalOpen(false);
+    }
+  }, [certState]);
+
+  const handleGeneratePDF = async (cert: any) => {
+    setIsGeneratingPDF(cert.id);
+    try {
+      const element = document.getElementById(`pdf-cert-${cert.id}`);
+      if (!element) return;
+      
+      const originalDisplay = element.style.display;
+      element.style.display = 'block';
+      
+      const canvas = await html2canvas(element, { scale: 2, useCORS: true });
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+      
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      pdf.save(`Certificacion_${cert.numero}_${obra.direccion}.pdf`);
+      
+      element.style.display = originalDisplay;
+    } catch (e) {
+      console.error(e);
+      alert('Error al generar PDF');
+    } finally {
+      setIsGeneratingPDF(null);
+    }
+  };
 
   const handleDelete = async (id: number) => {
     if (confirm('¿Seguro que deseas eliminar este gasto?')) {
@@ -67,13 +106,22 @@ export default function ObraDetailClient({
             <Users size={16} /> <span className="font-medium">{obra.cliente}</span>
           </div>
         </div>
-        <button
-          onClick={() => { setSelectedType('GENERAL'); setIsModalOpen(true); }}
-          className="bg-gargom-accent hover:bg-blue-600 text-white px-5 py-2.5 rounded-xl font-medium flex items-center gap-2 transition-all shadow-lg shadow-gargom-accent/20 hover:shadow-xl hover:-translate-y-0.5 shrink-0"
-        >
-          <Plus size={20} strokeWidth={2.5} />
-          <span>Añadir Gasto a la Obra</span>
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setIsCertModalOpen(true)}
+            className="bg-white border-2 border-gargom-accent text-gargom-accent hover:bg-gargom-accent/5 px-5 py-2.5 rounded-xl font-medium flex items-center gap-2 transition-all shadow-sm shrink-0"
+          >
+            <FileCheck size={20} strokeWidth={2.5} />
+            <span>Nueva Certificación</span>
+          </button>
+          <button
+            onClick={() => { setSelectedType('GENERAL'); setIsModalOpen(true); }}
+            className="bg-gargom-accent hover:bg-blue-600 text-white px-5 py-2.5 rounded-xl font-medium flex items-center gap-2 transition-all shadow-lg shadow-gargom-accent/20 hover:shadow-xl hover:-translate-y-0.5 shrink-0"
+          >
+            <Plus size={20} strokeWidth={2.5} />
+            <span>Añadir Gasto</span>
+          </button>
+        </div>
       </div>
 
       {/* KPI Cards */}
@@ -245,6 +293,152 @@ export default function ObraDetailClient({
         )}
       </div>
 
+      {/* Certificaciones List */}
+      <div>
+        <h2 className="text-xl font-bold text-gargom-blue mb-4 flex items-center gap-2">
+          <FileCheck size={20} /> Certificaciones
+        </h2>
+        {(!obra.certifications || obra.certifications.length === 0) ? (
+          <div className="text-center py-12 bg-white rounded-3xl border border-slate-100 shadow-sm">
+            <FileCheck size={48} className="mx-auto text-slate-200 mb-3" />
+            <p className="text-slate-500 font-medium">No hay certificaciones registradas en esta obra.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <AnimatePresence>
+              {obra.certifications.map((cert: any, index: number) => (
+                <motion.div
+                  key={cert.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  transition={{ delay: index * 0.05 }}
+                  className="bg-white rounded-2xl p-5 relative overflow-hidden shadow-sm border border-slate-200 flex flex-col justify-between hover:shadow-md transition-all group"
+                >
+                  <div className="absolute top-0 inset-x-0 h-1.5 bg-gargom-blue" />
+                  
+                  <div className="flex justify-between items-start mb-4">
+                    <div>
+                      <h3 className="font-bold text-lg text-slate-800 leading-tight">{cert.concepto}</h3>
+                      <div className="flex items-center gap-1.5 text-xs text-slate-500 font-mono mt-1">
+                        <Hash size={12} /> {cert.numero}
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-xs font-bold text-slate-400 uppercase tracking-widest">Importe</div>
+                      <div className="text-xl font-bold text-gargom-accent">
+                        {new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(cert.importe)}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="pt-3 border-t border-slate-100 flex justify-end gap-2">
+                    <button 
+                      onClick={() => handleGeneratePDF(cert)}
+                      disabled={isGeneratingPDF === cert.id}
+                      className="text-xs bg-indigo-50 text-indigo-600 hover:bg-indigo-100 px-3 py-1.5 rounded-lg font-medium flex items-center gap-1.5 transition-colors"
+                    >
+                      {isGeneratingPDF === cert.id ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
+                      Generar Documento
+                    </button>
+                  </div>
+
+                  {/* Hidden PDF Template for this Certification */}
+                  <div id={`pdf-cert-${cert.id}`} className="absolute top-0 left-[-9999px] bg-white text-slate-900 w-[794px] h-[1123px] p-[50px] font-sans box-border shadow-xl">
+                    <div className="relative h-full flex flex-col">
+                      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 opacity-[0.03] pointer-events-none select-none z-0 text-[180px] font-black text-slate-900 whitespace-nowrap rotate-[-45deg] tracking-tighter">
+                        GARGOM
+                      </div>
+                      
+                      <div className="relative z-10 flex justify-between items-start mb-12 pb-6 border-b-4 border-gargom-blue">
+                        <div>
+                          <div className="text-4xl font-black text-gargom-blue tracking-tight mb-1">CONSTRUCCIONES GARGOM</div>
+                          <div className="text-sm font-semibold text-slate-500">NIF: B-12345678</div>
+                          <div className="text-sm font-semibold text-slate-500">Calle Falsa 123, 28000 Madrid</div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-3xl font-light text-slate-400 uppercase tracking-widest mb-1">Certificación</div>
+                          <div className="text-xl font-bold text-gargom-accent">Nº {cert.numero}</div>
+                          <div className="text-sm font-semibold text-slate-500 mt-2">Fecha: {new Date(cert.createdAt).toLocaleDateString('es-ES')}</div>
+                        </div>
+                      </div>
+
+                      <div className="relative z-10 grid grid-cols-2 gap-8 mb-12">
+                        <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100">
+                          <div className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Datos del Cliente</div>
+                          {obra.clients && obra.clients.length > 0 ? (
+                            <>
+                              <div className="font-bold text-lg text-slate-800 mb-1">{obra.clients[0].nombre}</div>
+                              {obra.clients[0].cif && <div className="text-sm text-slate-600 font-medium">CIF/NIF: {obra.clients[0].cif}</div>}
+                              {obra.clients[0].direccion && <div className="text-sm text-slate-600 font-medium mt-1">{obra.clients[0].direccion}</div>}
+                            </>
+                          ) : (
+                            <>
+                              <div className="font-bold text-lg text-slate-800 mb-1">{obra.cliente}</div>
+                              <div className="text-sm text-slate-600 font-medium">Obra: {obra.direccion}</div>
+                            </>
+                          )}
+                        </div>
+                        <div className="bg-blue-50/50 p-6 rounded-2xl border border-blue-100">
+                          <div className="text-xs font-bold text-blue-400 uppercase tracking-widest mb-3">Detalles de la Obra</div>
+                          <div className="font-bold text-lg text-slate-800 mb-1">{obra.direccion}</div>
+                          {obra.arquitecto && <div className="text-sm text-slate-600 font-medium mt-1">Arquitecto: {obra.arquitecto}</div>}
+                        </div>
+                      </div>
+
+                      <div className="relative z-10 flex-1">
+                        <table className="w-full text-left border-collapse">
+                          <thead>
+                            <tr className="border-b-2 border-slate-800">
+                              <th className="py-4 text-sm font-bold text-slate-400 uppercase tracking-widest">Concepto</th>
+                              <th className="py-4 text-sm font-bold text-slate-400 uppercase tracking-widest text-right">Importe</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            <tr className="border-b border-slate-100">
+                              <td className="py-6 text-lg font-bold text-slate-800">{cert.concepto}</td>
+                              <td className="py-6 text-lg font-bold text-slate-800 text-right">{new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(cert.importe)}</td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+
+                      <div className="relative z-10 w-1/2 ml-auto mb-16 mt-8">
+                        <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100">
+                          <div className="flex justify-between items-center mb-2">
+                            <span className="text-sm font-bold text-slate-500">Base Imponible:</span>
+                            <span className="text-base font-bold text-slate-800">{new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(cert.importe)}</span>
+                          </div>
+                          <div className="flex justify-between items-center mb-4">
+                            <span className="text-sm font-bold text-slate-500">IVA ({obra.porcentajeImpuesto ?? 10}%):</span>
+                            <span className="text-base font-bold text-slate-800">{new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(cert.importe * ((obra.porcentajeImpuesto ?? 10)/100))}</span>
+                          </div>
+                          <div className="flex justify-between items-center pt-4 border-t border-slate-200">
+                            <span className="text-sm font-bold text-slate-800 uppercase tracking-widest">TOTAL:</span>
+                            <span className="text-2xl font-black text-gargom-blue">{new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(cert.importe * (1 + (obra.porcentajeImpuesto ?? 10)/100))}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="relative z-10 mt-auto flex justify-between items-end border-t border-slate-200 pt-8">
+                        <div className="w-64 text-center">
+                          <div className="h-16 border-b border-slate-300 mb-2"></div>
+                          <div className="text-xs font-bold text-slate-500 uppercase tracking-widest">Firma y Sello</div>
+                          <div className="text-sm font-medium text-slate-700 mt-1">Construcciones Gargom S.L.</div>
+                        </div>
+                        <div className="text-xs font-medium text-slate-400 text-right max-w-xs">
+                          Documento generado automáticamente por Gargom ERP. Válido a efectos informativos.
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </div>
+        )}
+      </div>
+
       {/* Modal Añadir Gasto */}
       <AnimatePresence>
         {isModalOpen && (
@@ -408,6 +602,80 @@ export default function ObraDetailClient({
                       className="bg-gargom-blue hover:bg-[#021033] text-white px-8 py-3 rounded-xl font-medium flex items-center justify-center gap-2 transition-all shadow-lg shadow-gargom-blue/20 hover:shadow-xl hover:-translate-y-0.5 disabled:opacity-70 disabled:pointer-events-none"
                     >
                       {isPending ? <Loader2 size={20} className="animate-spin" /> : <span>Guardar Gasto</span>}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Modal Añadir Certificación */}
+      <AnimatePresence>
+        {isCertModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsCertModalOpen(false)}
+              className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
+            />
+            
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="bg-white rounded-3xl shadow-2xl w-full max-w-xl relative z-10 overflow-hidden border border-slate-100 flex flex-col"
+            >
+              <div className="p-6 md:p-8">
+                <div className="flex justify-between items-center mb-6">
+                  <h2 className="text-2xl font-bold text-gargom-blue flex items-center gap-2">
+                    <FileCheck size={24} className="text-gargom-accent" /> Nueva Certificación
+                  </h2>
+                  <button 
+                    onClick={() => setIsCertModalOpen(false)}
+                    className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 transition-colors"
+                  >
+                    <X size={18} />
+                  </button>
+                </div>
+
+                <form action={certFormAction} className="space-y-5">
+                  <input type="hidden" name="projectId" value={obra.id} />
+                  
+                  <div className="space-y-1">
+                    <label className="text-sm font-medium text-slate-700 ml-1">Concepto *</label>
+                    <input type="text" name="concepto" required className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-gargom-accent/50 focus:bg-white transition-all" placeholder="Ej. Certificación 1: Movimiento de tierras" />
+                  </div>
+                  
+                  <div className="space-y-1">
+                    <label className="text-sm font-medium text-slate-700 ml-1">Número de Certificación *</label>
+                    <input type="text" name="numero" required className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-gargom-accent/50 focus:bg-white transition-all font-mono" placeholder="CERT-001" />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-sm font-medium text-slate-700 ml-1">Importe a Facturar (€) *</label>
+                    <input type="number" name="importe" step="0.01" required className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-gargom-accent/50 focus:bg-white transition-all text-lg font-bold text-gargom-accent" placeholder="0.00" />
+                  </div>
+
+                  {certState?.error && (
+                    <div className="p-3 bg-red-50 border border-red-100 rounded-xl text-red-600 text-sm font-medium">
+                      {certState.error}
+                    </div>
+                  )}
+
+                  <div className="pt-4 border-t border-slate-100 flex justify-end gap-3 mt-8">
+                    <button type="button" onClick={() => setIsCertModalOpen(false)} className="px-5 py-2.5 rounded-xl font-medium text-slate-600 hover:bg-slate-100 transition-colors">
+                      Cancelar
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={isCertPending}
+                      className="bg-gargom-blue hover:bg-[#021033] text-white px-6 py-2.5 rounded-xl font-medium flex items-center justify-center gap-2 transition-all shadow-lg shadow-gargom-blue/20 hover:shadow-xl hover:-translate-y-0.5 disabled:opacity-70 disabled:pointer-events-none"
+                    >
+                      {isCertPending ? <Loader2 size={20} className="animate-spin" /> : <span>Guardar Certificación</span>}
                     </button>
                   </div>
                 </form>

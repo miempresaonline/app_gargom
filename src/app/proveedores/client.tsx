@@ -12,6 +12,8 @@ export default function ProveedoresClient({ initialProveedores }: { initialProve
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editNombre, setEditNombre] = useState('');
   const [editCorreo, setEditCorreo] = useState('');
+  const [editCif, setEditCif] = useState('');
+  const [editTelefono, setEditTelefono] = useState('');
   const [isUpdating, setIsUpdating] = useState(false);
   const [isDeleting, setIsDeleting] = useState<number | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -25,7 +27,10 @@ export default function ProveedoresClient({ initialProveedores }: { initialProve
 
   const handleSaveEdit = async (id: number) => {
     setIsUpdating(true);
-    await updateSupplier(id, editNombre, editCorreo);
+    const result = await updateSupplier(id, editNombre, editCorreo, editCif, editTelefono);
+    if (result.error) {
+      alert(result.error);
+    }
     setIsUpdating(false);
     setEditingId(null);
   };
@@ -111,7 +116,13 @@ export default function ProveedoresClient({ initialProveedores }: { initialProve
                     {isUpdating ? <Loader2 size={16} className="animate-spin" /> : <Building2 size={16} />}
                   </button>
                 ) : (
-                  <button onClick={() => { setEditingId(proveedor.id); setEditNombre(proveedor.nombre); setEditCorreo(proveedor.correo || ''); }} className="p-2 bg-white text-slate-500 rounded-lg shadow hover:text-gargom-accent transition border border-slate-200">
+                  <button onClick={() => { 
+                    setEditingId(proveedor.id); 
+                    setEditNombre(proveedor.nombre); 
+                    setEditCorreo(proveedor.correo || ''); 
+                    setEditCif(proveedor.cif || '');
+                    setEditTelefono(proveedor.telefono || '');
+                  }} className="p-2 bg-white text-slate-500 rounded-lg shadow hover:text-gargom-accent transition border border-slate-200">
                     <Edit2 size={16} />
                   </button>
                 )}
@@ -139,7 +150,37 @@ export default function ProveedoresClient({ initialProveedores }: { initialProve
                   <div className="h-px w-12 bg-gargom-accent mt-2"></div>
                 </div>
 
-                <div className="mt-auto">
+                <div className="mt-auto space-y-2">
+                  <div className="flex items-center gap-3 text-sm text-slate-600 bg-white p-3 rounded-lg border border-slate-100 shadow-sm">
+                    <span className="font-bold text-slate-400 w-16 text-xs uppercase">CIF</span>
+                    {editingId === proveedor.id ? (
+                      <input 
+                        type="text" 
+                        required
+                        value={editCif} 
+                        onChange={e => setEditCif(e.target.value)}
+                        className="border-b border-gargom-accent focus:outline-none bg-transparent w-full"
+                      />
+                    ) : (
+                      <span className="truncate font-medium">{proveedor.cif || 'No especificado'}</span>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-3 text-sm text-slate-600 bg-white p-3 rounded-lg border border-slate-100 shadow-sm">
+                    <span className="font-bold text-slate-400 w-16 text-xs uppercase">Tlf</span>
+                    {editingId === proveedor.id ? (
+                      <input 
+                        type="tel" 
+                        required
+                        value={editTelefono} 
+                        onChange={e => setEditTelefono(e.target.value)}
+                        className="border-b border-gargom-accent focus:outline-none bg-transparent w-full"
+                      />
+                    ) : (
+                      <span className="truncate font-medium">{proveedor.telefono || 'No especificado'}</span>
+                    )}
+                  </div>
+
                   <div className="flex items-center gap-3 text-sm text-slate-600 bg-white p-3 rounded-lg border border-slate-100 shadow-sm">
                     <Mail size={16} className="text-gargom-accent flex-shrink-0" />
                     {editingId === proveedor.id ? (
@@ -202,6 +243,29 @@ export default function ProveedoresClient({ initialProveedores }: { initialProve
                         required
                         className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-gargom-accent/50 focus:bg-white transition-all"
                         placeholder="Ej. Suministros López"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-slate-700 ml-1">CIF / NIF *</label>
+                      <input
+                        type="text"
+                        name="cif"
+                        required
+                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-gargom-accent/50 focus:bg-white transition-all"
+                        placeholder="Ej. B12345678"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-slate-700 ml-1">Teléfono *</label>
+                      <input
+                        type="tel"
+                        name="telefono"
+                        required
+                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-gargom-accent/50 focus:bg-white transition-all"
+                        placeholder="Ej. +34 600 000 000"
                       />
                     </div>
                   </div>

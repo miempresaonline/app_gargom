@@ -6,9 +6,9 @@ import { Plus, X, Package, FileText, Calendar, Building, Landmark, Pickaxe, Hard
 import { createGasto, updateGasto, deleteGasto, parseInvoiceWithGroq } from './actions';
 
 export default function GastosClient({ 
-  initialGastos, obras, bancos, trabajadores 
+  initialGastos, obras, bancos, trabajadores, proveedores 
 }: { 
-  initialGastos: any[], obras: any[], bancos: any[], trabajadores: any[] 
+  initialGastos: any[], obras: any[], bancos: any[], trabajadores: any[], proveedores: any[] 
 }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingGasto, setEditingGasto] = useState<any>(null);
@@ -18,6 +18,10 @@ export default function GastosClient({
   const [isDeleting, setIsDeleting] = useState<number | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<string>('ALL');
+  const [filterMonth, setFilterMonth] = useState<string>('ALL');
+  const [filterProject, setFilterProject] = useState<string>('ALL');
+  const [sortConfig, setSortConfig] = useState<{key: string, direction: 'asc'|'desc'}>({ key: 'fecha', direction: 'desc' });
+  const [viewMode, setViewMode] = useState<'grid'|'table'>('table');
   
   // AI Parsing
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -72,14 +76,52 @@ export default function GastosClient({
     }
   }, [selectedWorkerId, horas, trabajadores]);
 
+  const handleSort = (key: string) => {
+    setSortConfig(prev => ({
+      key,
+      direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc'
+    }));
+  };
+
   const filteredGastos = initialGastos.filter(gasto => {
     const matchesSearch = 
       (gasto.concepto?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
       (gasto.project?.cliente?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+      (gasto.project?.direccion?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
       (gasto.numero?.toLowerCase() || '').includes(searchTerm.toLowerCase());
     const matchesType = filterType === 'ALL' || gasto.tipo === filterType;
-    return matchesSearch && matchesType;
+    const matchesProject = filterProject === 'ALL' || gasto.projectId?.toString() === filterProject;
+    
+    let matchesMonth = true;
+    if (filterMonth !== 'ALL') {
+      const gDate = gasto.fecha ? new Date(gasto.fecha) : new Date(gasto.createdAt);
+      const [y, m] = filterMonth.split('-');
+      matchesMonth = gDate.getFullYear().toString() === y && (gDate.getMonth() + 1).toString().padStart(2, '0') === m;
+    }
+
+    return matchesSearch && matchesType && matchesProject && matchesMonth;
+  }).sort((a, b) => {
+    let aValue = a[sortConfig.key];
+    let bValue = b[sortConfig.key];
+
+    if (sortConfig.key === 'fecha') {
+      aValue = a.fecha ? new Date(a.fecha).getTime() : new Date(a.createdAt).getTime();
+      bValue = b.fecha ? new Date(b.fecha).getTime() : new Date(b.createdAt).getTime();
+    } else if (sortConfig.key === 'project') {
+      aValue = a.project?.cliente || '';
+      bValue = b.project?.cliente || '';
+    }
+
+    if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
+    if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
+    return 0;
   });
+
+  // Extract unique months for the filter
+  const availableMonths = Array.from(new Set(initialGastos.map(g => {
+    const d = g.fecha ? new Date(g.fecha) : new Date(g.createdAt);
+    return `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, '0')}`;
+  }))).sort().reverse();
 
   const openCreateModal = () => {
     setEditingGasto(null);
@@ -170,20 +212,37 @@ export default function GastosClient({
       </div>
 
       {/* Filters and Search */}
-      <div className="flex flex-col md:flex-row gap-4">
-        <div className="relative flex-1">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-            <Search size={18} />
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-col md:flex-row gap-4">
+          <div className="relative flex-1">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+              <Search size={18} />
+            </div>
+            <input
+              type="text"
+              placeholder="Buscar por concepto, cliente, obra o factura..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gargom-accent/50 shadow-sm"
+            />
           </div>
-          <input
-            type="text"
-            placeholder="Buscar por concepto, cliente o número de factura..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gargom-accent/50 shadow-sm"
-          />
+          <div className="flex gap-2 w-full md:w-auto">
+            <button 
+              onClick={() => setViewMode('grid')}
+              className={`p-3 rounded-xl border flex items-center justify-center transition-colors ${viewMode === 'grid' ? 'bg-gargom-blue text-white border-gargom-blue' : 'bg-white text-slate-400 border-slate-200 hover:bg-slate-50'}`}
+            >
+              <Package size={20} />
+            </button>
+            <button 
+              onClick={() => setViewMode('table')}
+              className={`p-3 rounded-xl border flex items-center justify-center transition-colors ${viewMode === 'table' ? 'bg-gargom-blue text-white border-gargom-blue' : 'bg-white text-slate-400 border-slate-200 hover:bg-slate-50'}`}
+            >
+              <FileText size={20} />
+            </button>
+          </div>
         </div>
-        <div className="w-full md:w-64">
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <select 
             value={filterType}
             onChange={(e) => setFilterType(e.target.value)}
@@ -196,99 +255,191 @@ export default function GastosClient({
             <option value="SERVICIOS">Servicios</option>
             <option value="PERSONAL">Personal</option>
           </select>
+          
+          <select 
+            value={filterMonth}
+            onChange={(e) => setFilterMonth(e.target.value)}
+            className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gargom-accent/50 shadow-sm font-medium text-slate-600"
+          >
+            <option value="ALL">Todos los meses</option>
+            {availableMonths.map(m => {
+              const [y, mo] = m.split('-');
+              const date = new Date(parseInt(y), parseInt(mo) - 1);
+              return <option key={m} value={m}>{date.toLocaleString('es-ES', { month: 'long', year: 'numeric' }).toUpperCase()}</option>
+            })}
+          </select>
+
+          <select 
+            value={filterProject}
+            onChange={(e) => setFilterProject(e.target.value)}
+            className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gargom-accent/50 shadow-sm font-medium text-slate-600"
+          >
+            <option value="ALL">Todas las obras</option>
+            {obras.map(o => (
+              <option key={o.id} value={o.id.toString()}>{o.cliente} - {o.direccion}</option>
+            ))}
+          </select>
         </div>
       </div>
 
-      {/* Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <AnimatePresence>
-          {filteredGastos.map((gasto, index) => (
-            <motion.div
-              key={gasto.id}
-              initial={{ opacity: 0, y: 30, rotateX: -5 }}
-              animate={{ opacity: 1, y: 0, rotateX: 0 }}
-              exit={{ opacity: 0, scale: 0.95, filter: 'blur(5px)' }}
-              transition={{ delay: index * 0.05, type: 'spring', stiffness: 200, damping: 20 }}
-              whileHover={{ y: -8, scale: 1.02, transition: { duration: 0.2 } }}
-              className="bg-white/80 backdrop-blur-xl rounded-[24px] p-6 relative overflow-hidden group shadow-lg shadow-slate-200/50 hover:shadow-2xl hover:shadow-gargom-accent/20 border border-slate-100 flex gap-5 transition-all duration-300"
-            >
-              {/* Background Glow Effect */}
-              <div className="absolute inset-0 bg-gradient-to-br from-white/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 z-0 pointer-events-none" />
-              
-              {/* Type Indicator */}
-              <div className={`w-2.5 h-full absolute left-0 top-0 transition-colors duration-500 ${gasto.tipo === 'GENERAL' ? 'bg-gradient-to-b from-purple-400 to-purple-600' : gasto.tipo === 'PERSONAL' ? 'bg-gradient-to-b from-emerald-400 to-emerald-600' : 'bg-gradient-to-b from-orange-400 to-orange-600'}`} />
+      {/* Content */}
+      {viewMode === 'grid' ? (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <AnimatePresence>
+            {filteredGastos.map((gasto, index) => (
+              <motion.div
+                key={gasto.id}
+                initial={{ opacity: 0, y: 30, rotateX: -5 }}
+                animate={{ opacity: 1, y: 0, rotateX: 0 }}
+                exit={{ opacity: 0, scale: 0.95, filter: 'blur(5px)' }}
+                transition={{ delay: index * 0.05, type: 'spring', stiffness: 200, damping: 20 }}
+                whileHover={{ y: -8, scale: 1.02, transition: { duration: 0.2 } }}
+                className="bg-white/80 backdrop-blur-xl rounded-[24px] p-6 relative overflow-hidden group shadow-lg shadow-slate-200/50 hover:shadow-2xl hover:shadow-gargom-accent/20 border border-slate-100 flex gap-5 transition-all duration-300"
+              >
+                {/* Background Glow Effect */}
+                <div className="absolute inset-0 bg-gradient-to-br from-white/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 z-0 pointer-events-none" />
+                
+                {/* Type Indicator */}
+                <div className={`w-2.5 h-full absolute left-0 top-0 transition-colors duration-500 ${gasto.tipo === 'GENERAL' ? 'bg-gradient-to-b from-purple-400 to-purple-600' : gasto.tipo === 'PERSONAL' ? 'bg-gradient-to-b from-emerald-400 to-emerald-600' : 'bg-gradient-to-b from-orange-400 to-orange-600'}`} />
 
-              <div className="flex-1 pl-4 space-y-3">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold ${
-                      gasto.tipo === 'GENERAL' ? 'bg-purple-100 text-purple-700' :
-                      gasto.tipo === 'PERSONAL' ? 'bg-green-100 text-green-700' :
-                      'bg-orange-100 text-orange-700'
-                    }`}>
-                      {gasto.tipo}
-                    </span>
-                    <h3 className="font-bold text-lg text-slate-800 mt-1">
-                      {gasto.concepto || (gasto.tipo === 'PERSONAL' ? `Horas: ${gasto.worker?.nombre}` : `Factura ${gasto.numero}`)}
-                    </h3>
-                  </div>
-                  <div className="text-right">
-                    <div className="font-bold text-xl text-gargom-blue">
-                      {new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(gasto.importe || 0)}
+                <div className="flex-1 pl-4 space-y-3">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold ${
+                        gasto.tipo === 'GENERAL' ? 'bg-purple-100 text-purple-700' :
+                        gasto.tipo === 'PERSONAL' ? 'bg-green-100 text-green-700' :
+                        'bg-orange-100 text-orange-700'
+                      }`}>
+                        {gasto.tipo}
+                      </span>
+                      <h3 className="font-bold text-lg text-slate-800 mt-1">
+                        {gasto.concepto || (gasto.tipo === 'PERSONAL' ? `Horas: ${gasto.worker?.nombre}` : `Factura ${gasto.numero}`)}
+                      </h3>
                     </div>
+                    <div className="text-right">
+                      <div className="font-bold text-xl text-gargom-blue">
+                        {new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(gasto.importe || 0)}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="text-sm text-slate-500 grid grid-cols-2 gap-2">
+                    <div className="flex items-center gap-1.5 truncate">
+                      <Building size={14} />
+                      <span className="truncate">{gasto.project?.cliente || 'Obra Desconocida'}</span>
+                    </div>
+                    {gasto.fecha && (
+                      <div className="flex items-center gap-1.5">
+                        <Calendar size={14} />
+                        <span>{new Date(gasto.fecha).toLocaleDateString('es-ES')}</span>
+                      </div>
+                    )}
+                    {gasto.tipo === 'PERSONAL' && gasto.horas && (
+                      <div className="flex items-center gap-1.5">
+                        <Users size={14} />
+                        <span>{gasto.horas} horas</span>
+                      </div>
+                    )}
+                    {['INDUSTRIAL', 'MATERIALES', 'SERVICIOS'].includes(gasto.tipo) && gasto.bank && (
+                      <div className="flex items-center gap-1.5">
+                        <Landmark size={14} />
+                        <span className="truncate">{gasto.bank.nombre}</span>
+                      </div>
+                    )}
                   </div>
                 </div>
 
-                <div className="text-sm text-slate-500 grid grid-cols-2 gap-2">
-                  <div className="flex items-center gap-1.5 truncate">
-                    <Building size={14} />
-                    <span className="truncate">{gasto.project?.cliente || 'Obra Desconocida'}</span>
-                  </div>
-                  {gasto.fecha && (
-                    <div className="flex items-center gap-1.5">
-                      <Calendar size={14} />
-                      <span>{new Date(gasto.fecha).toLocaleDateString('es-ES')}</span>
-                    </div>
-                  )}
-                  {gasto.tipo === 'PERSONAL' && gasto.horas && (
-                    <div className="flex items-center gap-1.5">
-                      <Users size={14} />
-                      <span>{gasto.horas} horas</span>
-                    </div>
-                  )}
-                  {['INDUSTRIAL', 'MATERIALES', 'SERVICIOS'].includes(gasto.tipo) && gasto.bank && (
-                    <div className="flex items-center gap-1.5">
-                      <Landmark size={14} />
-                      <span className="truncate">{gasto.bank.nombre}</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex flex-col gap-2 justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                <button onClick={() => openEditModal(gasto)} className="p-2 bg-slate-50 text-slate-500 rounded-lg hover:bg-slate-200 transition shadow-sm border border-slate-200" title="Editar">
-                  <Edit2 size={16} />
-                </button>
-                {gasto.tipo === 'PERSONAL' && (
-                  <button onClick={() => handleClone(gasto)} className="p-2 bg-slate-50 text-slate-500 rounded-lg hover:bg-slate-200 transition shadow-sm border border-slate-200" title="Clonar Gasto">
-                    <Copy size={16} />
+                {/* Action Buttons */}
+                <div className="flex flex-col gap-2 justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                  <button onClick={() => openEditModal(gasto)} className="p-2 bg-slate-50 text-slate-500 rounded-lg hover:bg-slate-200 transition shadow-sm border border-slate-200" title="Editar">
+                    <Edit2 size={16} />
                   </button>
-                )}
-                <button onClick={() => handleDelete(gasto.id)} disabled={isDeleting === gasto.id} className="p-2 bg-red-50 text-red-500 rounded-lg hover:bg-red-100 transition shadow-sm border border-red-100">
-                  {isDeleting === gasto.id ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
-                </button>
-              </div>
-            </motion.div>
-          ))}
-        </AnimatePresence>
+                  {gasto.tipo === 'PERSONAL' && (
+                    <button onClick={() => handleClone(gasto)} className="p-2 bg-slate-50 text-slate-500 rounded-lg hover:bg-slate-200 transition shadow-sm border border-slate-200" title="Clonar Gasto">
+                      <Copy size={16} />
+                    </button>
+                  )}
+                  <button onClick={() => handleDelete(gasto.id)} disabled={isDeleting === gasto.id} className="p-2 bg-red-50 text-red-500 rounded-lg hover:bg-red-100 transition shadow-sm border border-red-100">
+                    {isDeleting === gasto.id ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
+                  </button>
+                </div>
+              </motion.div>
+            ))}
+          </AnimatePresence>
 
-        {filteredGastos.length === 0 && (
-          <div className="col-span-full py-12 text-center bg-white rounded-3xl border border-slate-100">
-            <p className="text-slate-500 font-medium">No se han encontrado gastos que coincidan.</p>
+          {filteredGastos.length === 0 && (
+            <div className="col-span-full py-12 text-center bg-white rounded-3xl border border-slate-100">
+              <p className="text-slate-500 font-medium">No se han encontrado gastos que coincidan.</p>
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm text-slate-600">
+              <thead className="bg-slate-50 text-slate-500 font-bold uppercase tracking-wider text-xs border-b border-slate-200">
+                <tr>
+                  <th className="px-6 py-4 cursor-pointer hover:bg-slate-100 transition" onClick={() => handleSort('fecha')}>Fecha {sortConfig.key === 'fecha' && (sortConfig.direction === 'asc' ? '↑' : '↓')}</th>
+                  <th className="px-6 py-4 cursor-pointer hover:bg-slate-100 transition" onClick={() => handleSort('tipo')}>Tipo {sortConfig.key === 'tipo' && (sortConfig.direction === 'asc' ? '↑' : '↓')}</th>
+                  <th className="px-6 py-4 cursor-pointer hover:bg-slate-100 transition" onClick={() => handleSort('concepto')}>Concepto {sortConfig.key === 'concepto' && (sortConfig.direction === 'asc' ? '↑' : '↓')}</th>
+                  <th className="px-6 py-4 cursor-pointer hover:bg-slate-100 transition" onClick={() => handleSort('project')}>Obra {sortConfig.key === 'project' && (sortConfig.direction === 'asc' ? '↑' : '↓')}</th>
+                  <th className="px-6 py-4 text-right cursor-pointer hover:bg-slate-100 transition" onClick={() => handleSort('importe')}>Importe {sortConfig.key === 'importe' && (sortConfig.direction === 'asc' ? '↑' : '↓')}</th>
+                  <th className="px-6 py-4 text-center">Acciones</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {filteredGastos.map((gasto) => (
+                  <tr key={gasto.id} className="hover:bg-slate-50/50 transition-colors group">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {gasto.fecha ? new Date(gasto.fecha).toLocaleDateString('es-ES') : '-'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold ${
+                        gasto.tipo === 'GENERAL' ? 'bg-purple-100 text-purple-700' :
+                        gasto.tipo === 'PERSONAL' ? 'bg-green-100 text-green-700' :
+                        'bg-orange-100 text-orange-700'
+                      }`}>
+                        {gasto.tipo}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 font-medium text-slate-800">
+                      {gasto.concepto || (gasto.tipo === 'PERSONAL' ? `Horas: ${gasto.worker?.nombre}` : `Factura ${gasto.numero}`)}
+                    </td>
+                    <td className="px-6 py-4">
+                      {gasto.project?.cliente || '-'} <span className="text-xs text-slate-400 block">{gasto.project?.direccion}</span>
+                    </td>
+                    <td className="px-6 py-4 text-right font-bold text-gargom-blue whitespace-nowrap">
+                      {new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(gasto.importe || 0)}
+                    </td>
+                    <td className="px-6 py-4 text-center whitespace-nowrap">
+                      <div className="flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button onClick={() => openEditModal(gasto)} className="p-1.5 text-slate-400 hover:text-gargom-accent hover:bg-blue-50 rounded transition" title="Editar">
+                          <Edit2 size={16} />
+                        </button>
+                        {gasto.tipo === 'PERSONAL' && (
+                          <button onClick={() => handleClone(gasto)} className="p-1.5 text-slate-400 hover:text-gargom-accent hover:bg-blue-50 rounded transition" title="Clonar">
+                            <Copy size={16} />
+                          </button>
+                        )}
+                        <button onClick={() => handleDelete(gasto.id)} disabled={isDeleting === gasto.id} className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded transition">
+                          {isDeleting === gasto.id ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+                {filteredGastos.length === 0 && (
+                  <tr>
+                    <td colSpan={6} className="px-6 py-12 text-center text-slate-500 font-medium">
+                      No se han encontrado gastos.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Create / Edit Modal */}
       <AnimatePresence>
@@ -364,8 +515,31 @@ export default function GastosClient({
                           <input type="text" name="concepto" defaultValue={editingGasto?.concepto} required className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl" placeholder="Ej. Material de oficina" />
                         </div>
                         <div className="space-y-1">
+                          <label className="text-sm font-medium text-slate-700 ml-1">Proveedor *</label>
+                          <select name="supplierId" required defaultValue={editingGasto?.supplierId} className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl">
+                            <option value="">Selecciona un proveedor...</option>
+                            {proveedores.map(p => (
+                              <option key={p.id} value={p.id}>{p.nombre} ({p.cif || 'Sin CIF'})</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="space-y-1">
                           <label className="text-sm font-medium text-slate-700 ml-1">Importe (€) *</label>
                           <input type="number" name="importe" defaultValue={editingGasto?.importe} step="0.01" required className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl" placeholder="0.00" />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-sm font-medium text-slate-700 ml-1">Estado de Pago</label>
+                          <select name="estadoPago" defaultValue={editingGasto?.estadoPago || 'Pendiente'} className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl">
+                            <option value="Pendiente">Pendiente</option>
+                            <option value="Parcial">Pago Parcial</option>
+                            <option value="Pagado">Pagado</option>
+                          </select>
+                        </div>
+                        <div className="space-y-1 flex items-center h-full pt-6">
+                          <label className="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" name="esGastoB" defaultChecked={editingGasto?.esGastoB} className="w-5 h-5 rounded border-slate-300 text-gargom-accent focus:ring-gargom-accent" />
+                            <span className="text-sm font-medium text-slate-700">Marcar como Gasto "B"</span>
+                          </label>
                         </div>
                       </div>
                     )}
@@ -375,6 +549,15 @@ export default function GastosClient({
                         <div className="space-y-1 md:col-span-2">
                           <label className="text-sm font-medium text-slate-700 ml-1">Concepto</label>
                           <input type="text" name="concepto" defaultValue={editingGasto?.concepto} className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl" placeholder="Descripción breve" />
+                        </div>
+                        <div className="space-y-1 md:col-span-2">
+                          <label className="text-sm font-medium text-slate-700 ml-1">Proveedor *</label>
+                          <select name="supplierId" required defaultValue={editingGasto?.supplierId} className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl">
+                            <option value="">Selecciona un proveedor...</option>
+                            {proveedores.map(p => (
+                              <option key={p.id} value={p.id}>{p.nombre} ({p.cif || 'Sin CIF'})</option>
+                            ))}
+                          </select>
                         </div>
                         <div className="space-y-1">
                           <label className="text-sm font-medium text-slate-700 ml-1">Número de Factura</label>
@@ -392,7 +575,15 @@ export default function GastosClient({
                           <label className="text-sm font-medium text-slate-700 ml-1">Fecha de Vencimiento</label>
                           <input type="date" name="fechaVencimiento" defaultValue={editingGasto?.fechaVencimiento ? new Date(editingGasto.fechaVencimiento).toISOString().split('T')[0] : ''} className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl" />
                         </div>
-                        <div className="space-y-1 md:col-span-2">
+                        <div className="space-y-1">
+                          <label className="text-sm font-medium text-slate-700 ml-1">Estado de Pago</label>
+                          <select name="estadoPago" defaultValue={editingGasto?.estadoPago || 'Pendiente'} className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl">
+                            <option value="Pendiente">Pendiente</option>
+                            <option value="Parcial">Pago Parcial</option>
+                            <option value="Pagado">Pagado</option>
+                          </select>
+                        </div>
+                        <div className="space-y-1">
                           <label className="text-sm font-medium text-slate-700 ml-1">Banco Asociado</label>
                           <select name="bankId" defaultValue={editingGasto?.bankId} className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl">
                             <option value="">Selecciona un banco...</option>
@@ -400,6 +591,12 @@ export default function GastosClient({
                               <option key={b.id} value={b.id}>{b.nombre} - {b.numeroCuenta}</option>
                             ))}
                           </select>
+                        </div>
+                        <div className="space-y-1 md:col-span-2 flex items-center h-full pt-2">
+                          <label className="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" name="esGastoB" defaultChecked={editingGasto?.esGastoB} className="w-5 h-5 rounded border-slate-300 text-gargom-accent focus:ring-gargom-accent" />
+                            <span className="text-sm font-medium text-slate-700">Marcar como Gasto "B"</span>
+                          </label>
                         </div>
                         <div className="space-y-1 md:col-span-2 mt-2">
                           <label className="text-sm font-medium text-slate-700 ml-1">Extraer datos de factura con IA</label>

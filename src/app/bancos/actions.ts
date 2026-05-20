@@ -5,10 +5,15 @@ import { revalidatePath } from 'next/cache';
 
 export async function createBank(prevState: any, formData: FormData) {
   const nombre = formData.get('nombre') as string;
-  const numeroCuenta = formData.get('numeroCuenta') as string;
+  let numeroCuenta = formData.get('numeroCuenta') as string;
 
   if (!nombre || !numeroCuenta) {
     return { error: 'Por favor, rellena todos los campos correctamente' };
+  }
+
+  numeroCuenta = numeroCuenta.replace(/\s+/g, '').toUpperCase();
+  if (!numeroCuenta.startsWith('ES') || numeroCuenta.length !== 24) {
+    return { error: 'El número de cuenta debe empezar por ES y tener 24 caracteres (excluyendo espacios)' };
   }
 
   try {
@@ -23,6 +28,15 @@ export async function createBank(prevState: any, formData: FormData) {
 }
 
 export async function updateBank(id: number, nombre: string, numeroCuenta: string) {
+  if (!nombre || !numeroCuenta) {
+    return { error: 'Por favor, rellena todos los campos correctamente' };
+  }
+
+  numeroCuenta = numeroCuenta.replace(/\s+/g, '').toUpperCase();
+  if (!numeroCuenta.startsWith('ES') || numeroCuenta.length !== 24) {
+    return { error: 'El número de cuenta debe empezar por ES y tener 24 caracteres (excluyendo espacios)' };
+  }
+
   try {
     await prisma.bank.update({
       where: { id },

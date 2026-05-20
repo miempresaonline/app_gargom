@@ -58,3 +58,25 @@ export async function deleteGastoObra(id: number, projectId: number) {
     return { error: 'Error al eliminar el gasto' };
   }
 }
+
+export async function createCertification(prevState: any, formData: FormData) {
+  const projectId = parseInt(formData.get('projectId') as string);
+  const importe = parseFloat(formData.get('importe') as string);
+  const numero = formData.get('numero') as string;
+  const concepto = formData.get('concepto') as string;
+
+  if (isNaN(projectId) || isNaN(importe) || !numero || !concepto) {
+    return { error: 'Por favor, rellena todos los campos correctamente' };
+  }
+
+  try {
+    await prisma.certification.create({
+      data: { projectId, importe, numero, concepto },
+    });
+    revalidatePath(`/obras/${projectId}`);
+    revalidatePath('/certificaciones');
+    return { success: true };
+  } catch (error) {
+    return { error: 'Error al crear la certificación' };
+  }
+}

@@ -33,11 +33,30 @@ model Project {
   clienteCorreo      String?
   clienteTelefono    String?
   observaciones    String?   @db.Text
+  
+  presupuestoAdicional Float @default(0)
+  porcentajeImpuesto   Float @default(10)
+  estado               String @default("ACTIVA")
+
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
 
   expenses         Expense[]
   certifications   Certification[]
+  clients          ProjectClient[]
+}
+
+model ProjectClient {
+  id        Int      @id @default(autoincrement())
+  nombre    String
+  cif       String?
+  direccion String?
+  
+  projectId Int
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Worker {
@@ -65,8 +84,12 @@ model Supplier {
   id        Int      @id @default(autoincrement())
   nombre    String
   correo    String?
+  cif       String   @default("")
+  telefono  String   @default("")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  expenses  Expense[]
 }
 
 enum ExpenseType {
@@ -89,6 +112,10 @@ model Expense {
   horas            Float?
   observaciones    String?     @db.Text
   
+  estadoPago       String      @default("Pendiente")
+  esGastoB         Boolean     @default(false)
+  imagenUrl        String?
+  
   projectId        Int
   project          Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
   
@@ -98,8 +125,19 @@ model Expense {
   workerId         Int?
   worker           Worker?     @relation(fields: [workerId], references: [id])
 
+  supplierId       Int?
+  supplier         Supplier?   @relation(fields: [supplierId], references: [id])
+
   createdAt        DateTime    @default(now())
   updatedAt        DateTime    @updatedAt
+}
+
+model SystemLog {
+  id        Int      @id @default(autoincrement())
+  accion    String
+  usuario   String
+  detalles  String   @db.Text
+  createdAt DateTime @default(now())
 }
 
 model Certification {

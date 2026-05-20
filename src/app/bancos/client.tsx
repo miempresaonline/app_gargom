@@ -25,9 +25,13 @@ export default function BancosClient({ initialBancos }: { initialBancos: any[] }
 
   const handleSaveEdit = async (id: number) => {
     setIsUpdating(true);
-    await updateBank(id, editNombre, editCuenta);
+    const result = await updateBank(id, editNombre, editCuenta);
+    if (result.error) {
+      alert(result.error);
+    } else {
+      setEditingId(null);
+    }
     setIsUpdating(false);
-    setEditingId(null);
   };
 
   const handleDelete = async (id: number) => {
@@ -229,8 +233,12 @@ export default function BancosClient({ initialBancos }: { initialBancos: any[] }
                         type="text"
                         name="numeroCuenta"
                         required
+                        pattern="^ES\w{22}$"
+                        minLength={24}
+                        maxLength={24}
+                        title="El IBAN debe empezar por ES y tener exactamente 24 caracteres en total sin espacios"
                         className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-gargom-accent/50 focus:bg-white transition-all font-mono"
-                        placeholder="ESXX XXXX XXXX XX XXXXXXXXXX"
+                        placeholder="ESXXXXXXXXXXXXXXXXXXXXXX"
                       />
                     </div>
                   </div>

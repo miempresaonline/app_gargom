@@ -3,6 +3,7 @@
 import { prisma } from '@/lib/db';
 import { revalidatePath } from 'next/cache';
 import { ExpenseType } from '@prisma/client';
+import { logAction } from '@/lib/logger';
 
 export async function createGasto(prevState: any, formData: FormData) {
   const tipo = formData.get('tipo') as ExpenseType;
@@ -22,8 +23,12 @@ export async function createGasto(prevState: any, formData: FormData) {
   const horas = formData.get('horas') ? parseFloat(formData.get('horas') as string) : null;
   const observaciones = formData.get('observaciones') as string || null;
 
+  const supplierId = formData.get('supplierId') ? parseInt(formData.get('supplierId') as string) : null;
+  const estadoPago = formData.get('estadoPago') as string || 'Pendiente';
+  const esGastoB = formData.get('esGastoB') === 'on';
+
   try {
-    await prisma.expense.create({
+    const expense = await prisma.expense.create({
       data: {
         tipo,
         projectId,
@@ -35,9 +40,29 @@ export async function createGasto(prevState: any, formData: FormData) {
         bankId,
         workerId,
         horas,
-        observaciones
+        observaciones,
+        supplierId,
+        estadoPago,
+        esGastoB
       },
     });
+
+    // Webhook to n8n
+    if (estadoPago === 'Pagado') {
+      try {
+        const webhookUrl = process.env.N8N_WEBHOOK_URL || 'https://n8n.miempresa.online/webhook/gastos';
+        fetch(webhookUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ event: 'gasto_pagado', gasto: expense })
+        }).catch(err => console.error('Error enviando webhook n8n:', err));
+      } catch (err) {
+        console.error('Error enviando webhook:', err);
+      }
+    }
+
+    await logAction('Crear Gasto', `Se ha registrado un nuevo gasto (${tipo}) por importe de ${importe}€`);
+
     revalidatePath('/gastos');
     return { success: true };
   } catch (error) {
@@ -63,9 +88,13 @@ export async function updateGasto(prevState: any, formData: FormData) {
   const workerId = formData.get('workerId') ? parseInt(formData.get('workerId') as string) : null;
   const horas = formData.get('horas') ? parseFloat(formData.get('horas') as string) : null;
   const observaciones = formData.get('observaciones') as string || null;
+  
+  const supplierId = formData.get('supplierId') ? parseInt(formData.get('supplierId') as string) : null;
+  const estadoPago = formData.get('estadoPago') as string || 'Pendiente';
+  const esGastoB = formData.get('esGastoB') === 'on';
 
   try {
-    await prisma.expense.update({
+    const expense = await prisma.expense.update({
       where: { id },
       data: {
         tipo,
@@ -78,9 +107,29 @@ export async function updateGasto(prevState: any, formData: FormData) {
         bankId,
         workerId,
         horas,
-        observaciones
+        observaciones,
+        supplierId,
+        estadoPago,
+        esGastoB
       },
     });
+    
+    // Webhook to n8n
+    if (estadoPago === 'Pagado') {
+      try {
+        const webhookUrl = process.env.N8N_WEBHOOK_URL || 'https://n8n.miempresa.online/webhook/gastos';
+        fetch(webhookUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ event: 'gasto_pagado', gasto: expense })
+        }).catch(err => console.error('Error enviando webhook n8n:', err));
+      } catch (err) {
+        console.error('Error enviando webhook:', err);
+      }
+    }
+
+    await logAction('Actualizar Gasto', `Se ha actualizado el gasto con ID ${id} (${tipo})`);
+
     revalidatePath('/gastos');
     return { success: true };
   } catch (error) {
@@ -90,9 +139,15 @@ export async function updateGasto(prevState: any, formData: FormData) {
 
 export async function deleteGasto(id: number) {
   try {
+    const expense = await prisma.expense.findUnique({ where: { id } });
     await prisma.expense.delete({
       where: { id },
     });
+    
+    if (expense) {
+      await logAction('Eliminar Gasto', `Se ha eliminado el gasto con ID ${id} (${expense.tipo} - ${expense.importe}€)`);
+    }
+
     revalidatePath('/gastos');
     return { success: true };
   } catch (error) {

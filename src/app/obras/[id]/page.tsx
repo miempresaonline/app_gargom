@@ -17,7 +17,8 @@ export default async function ObraDetailPage({ params }: { params: Promise<{ id:
           include: { worker: true, bank: true },
           orderBy: { createdAt: 'desc' }
         },
-        certifications: true
+        certifications: true,
+        clients: true
       }
     }),
     prisma.bank.findMany({ orderBy: { nombre: 'asc' } }),

@@ -18,6 +18,10 @@ export default async function Sidebar() {
     { name: 'Usuarios', icon: ShieldCheck, href: '/usuarios' },
   ];
 
+  if (session?.email === 'dpenuelaruiz7@gmail.com') {
+    menuItems.push({ name: 'Logs', icon: ShieldCheck, href: '/logs' });
+  }
+
   return (
     <aside className="h-full w-full bg-[#03194B] text-white shadow-[20px_0_40px_rgba(3,25,75,0.1)] flex flex-col z-50 overflow-hidden relative">
       {/* Decorative gradient orb */}

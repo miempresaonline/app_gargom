@@ -2,8 +2,8 @@
 
 import { useState, useTransition } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, X, MapPin, User, Phone, Mail, HardHat, Pickaxe, Building, Loader2, Trash2, ArrowRight, Search, Edit2 } from 'lucide-react';
-import { createProject, updateProject, deleteProject } from './actions';
+import { Plus, X, MapPin, User, Phone, Mail, HardHat, Pickaxe, Building, Loader2, Trash2, ArrowRight, Search, Edit2, Archive } from 'lucide-react';
+import { createProject, updateProject, archiveProject } from './actions';
 import Link from 'next/link';
 
 export default function ObrasClient({ initialObras }: { initialObras: any[] }) {
@@ -11,45 +11,70 @@ export default function ObrasClient({ initialObras }: { initialObras: any[] }) {
   const [editingObra, setEditingObra] = useState<any>(null);
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
-  const [isDeleting, setIsDeleting] = useState<number | null>(null);
+  const [isArchiving, setIsArchiving] = useState<number | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('recientes');
+  
+  // Dynamic clients state
+  const [clients, setClients] = useState<any[]>([]);
 
-  const filteredObras = initialObras.filter(obra => 
+  // Filter out archived projects
+  const activeObras = initialObras.filter(o => o.estado !== 'ARCHIVADA');
+
+  const filteredObras = activeObras.filter(obra => 
     obra.direccion.toLowerCase().includes(searchTerm.toLowerCase()) ||
     obra.cliente.toLowerCase().includes(searchTerm.toLowerCase())
   ).sort((a, b) => {
     if (sortBy === 'recientes') return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     if (sortBy === 'antiguas') return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-    if (sortBy === 'presupuesto_desc') return b.presupuestoTotal - a.presupuestoTotal;
-    if (sortBy === 'presupuesto_asc') return a.presupuestoTotal - b.presupuestoTotal;
+    if (sortBy === 'presupuesto_desc') return (b.presupuestoTotal + b.presupuestoAdicional) - (a.presupuestoTotal + a.presupuestoAdicional);
+    if (sortBy === 'presupuesto_asc') return (a.presupuestoTotal + a.presupuestoAdicional) - (b.presupuestoTotal + b.presupuestoAdicional);
     return 0;
   });
 
   const openCreateModal = () => {
     setEditingObra(null);
+    setClients([]);
     setError(null);
     setIsModalOpen(true);
   };
 
   const openEditModal = (obra: any) => {
     setEditingObra(obra);
+    setClients(obra.clients || []);
     setError(null);
     setIsModalOpen(true);
   };
 
-  const handleDelete = async (id: number) => {
-    if (confirm('¿Seguro que deseas eliminar esta obra? Esto eliminará también todos sus gastos y certificaciones asociados.')) {
-      setIsDeleting(id);
-      await deleteProject(id);
-      setIsDeleting(null);
+  const handleArchive = async (id: number) => {
+    if (confirm('¿Seguro que deseas archivar esta obra? No aparecerá en la lista activa.')) {
+      setIsArchiving(id);
+      await archiveProject(id);
+      setIsArchiving(null);
     }
+  };
+
+  const addClient = () => {
+    setClients([...clients, { nombre: '', cif: '', direccion: '' }]);
+  };
+
+  const removeClient = (index: number) => {
+    const newClients = [...clients];
+    newClients.splice(index, 1);
+    setClients(newClients);
+  };
+
+  const updateClient = (index: number, field: string, value: string) => {
+    const newClients = [...clients];
+    newClients[index] = { ...newClients[index], [field]: value };
+    setClients(newClients);
   };
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError(null);
     const formData = new FormData(e.currentTarget);
+    formData.append('clientsJSON', JSON.stringify(clients));
     
     startTransition(async () => {
       let result;
@@ -133,8 +158,8 @@ export default function ObrasClient({ initialObras }: { initialObras: any[] }) {
                 <button onClick={() => openEditModal(obra)} className="p-2 bg-slate-50 text-slate-500 rounded-lg hover:bg-slate-200 transition">
                   <Edit2 size={16} />
                 </button>
-                <button onClick={() => handleDelete(obra.id)} disabled={isDeleting === obra.id} className="p-2 bg-red-50 text-red-500 rounded-lg hover:bg-red-100 transition">
-                  {isDeleting === obra.id ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
+                <button onClick={() => handleArchive(obra.id)} disabled={isArchiving === obra.id} className="p-2 bg-orange-50 text-orange-500 rounded-lg hover:bg-orange-100 transition" title="Archivar Obra">
+                  {isArchiving === obra.id ? <Loader2 size={16} className="animate-spin" /> : <Archive size={16} />}
                 </button>
               </div>
 
@@ -148,16 +173,16 @@ export default function ObrasClient({ initialObras }: { initialObras: any[] }) {
                     <h3 className="font-bold text-xl text-gargom-blue line-clamp-2">{obra.direccion}</h3>
                     <div className="flex items-center gap-2 text-slate-500 text-sm mt-1">
                       <User size={14} />
-                      <span className="font-medium truncate">{obra.cliente}</span>
+                      <span className="font-medium truncate">{obra.clients?.length > 0 ? obra.clients.map((c:any)=>c.nombre).join(', ') : obra.cliente}</span>
                     </div>
                   </div>
                 </div>
 
                 <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100 grid grid-cols-2 gap-4">
                   <div>
-                    <div className="text-xs text-slate-400 font-semibold uppercase tracking-wider mb-1">Presupuesto</div>
+                    <div className="text-xs text-slate-400 font-semibold uppercase tracking-wider mb-1">Presupuesto Total</div>
                     <div className="font-bold text-lg text-gargom-accent">
-                      {new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(obra.presupuestoTotal)}
+                      {new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(obra.presupuestoTotal + obra.presupuestoAdicional)}
                     </div>
                   </div>
                   <div className="flex flex-col justify-center items-end">
@@ -189,24 +214,6 @@ export default function ObrasClient({ initialObras }: { initialObras: any[] }) {
                     </div>
                   </div>
                 )}
-
-                {(obra.clienteTelefono || obra.clienteCorreo) && (
-                  <div className="pt-2 mt-2 border-t border-slate-50 space-y-2">
-                    <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Contacto Cliente</span>
-                    {obra.clienteTelefono && (
-                      <div className="flex items-center gap-3 text-sm text-slate-600">
-                        <Phone size={14} className="text-slate-400" />
-                        <span>{obra.clienteTelefono}</span>
-                      </div>
-                    )}
-                    {obra.clienteCorreo && (
-                      <div className="flex items-center gap-3 text-sm text-slate-600">
-                        <Mail size={14} className="text-slate-400" />
-                        <span className="truncate">{obra.clienteCorreo}</span>
-                      </div>
-                    )}
-                  </div>
-                )}
               </div>
             </motion.div>
           ))}
@@ -214,7 +221,7 @@ export default function ObrasClient({ initialObras }: { initialObras: any[] }) {
         
         {filteredObras.length === 0 && (
           <div className="col-span-full py-12 text-center bg-white rounded-3xl border border-slate-100">
-            <p className="text-slate-500 font-medium">No se han encontrado obras.</p>
+            <p className="text-slate-500 font-medium">No se han encontrado obras activas.</p>
           </div>
         )}
       </div>
@@ -269,7 +276,7 @@ export default function ObrasClient({ initialObras }: { initialObras: any[] }) {
                         />
                       </div>
                       <div className="space-y-1">
-                        <label className="text-sm font-medium text-slate-700 ml-1">Presupuesto Total (€) *</label>
+                        <label className="text-sm font-medium text-slate-700 ml-1">Presupuesto Inicial (€) *</label>
                         <input
                           type="number"
                           name="presupuestoTotal"
@@ -280,32 +287,68 @@ export default function ObrasClient({ initialObras }: { initialObras: any[] }) {
                           placeholder="0.00"
                         />
                       </div>
+                      <div className="space-y-1">
+                        <label className="text-sm font-medium text-slate-700 ml-1">Presupuesto Adicional (€)</label>
+                        <input
+                          type="number"
+                          name="presupuestoAdicional"
+                          step="0.01"
+                          defaultValue={editingObra?.presupuestoAdicional || 0}
+                          className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gargom-accent/50 transition-all"
+                          placeholder="0.00"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-sm font-medium text-slate-700 ml-1">% Impuesto</label>
+                        <input
+                          type="number"
+                          name="porcentajeImpuesto"
+                          step="0.1"
+                          defaultValue={editingObra?.porcentajeImpuesto ?? 10}
+                          className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gargom-accent/50 transition-all"
+                          placeholder="10"
+                        />
+                      </div>
                     </div>
                   </div>
 
-                  {/* Contact Grid */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    {/* Cliente */}
-                    <div className="bg-blue-50/50 p-5 rounded-2xl border border-blue-100 space-y-4">
+                  {/* Clients List */}
+                  <div className="bg-blue-50/50 p-5 rounded-2xl border border-blue-100 space-y-4">
+                    <div className="flex justify-between items-center">
                       <h3 className="text-sm font-bold text-blue-600 uppercase tracking-wider flex items-center gap-2">
-                        <User size={16} /> Cliente *
+                        <User size={16} /> Clientes (Datos de Facturación)
                       </h3>
-                      <div className="space-y-3">
+                      <button type="button" onClick={addClient} className="text-xs bg-white border border-blue-200 text-blue-600 px-3 py-1.5 rounded-lg hover:bg-blue-50 font-medium">
+                        + Añadir Cliente
+                      </button>
+                    </div>
+                    
+                    {clients.length === 0 && (
+                      <p className="text-sm text-slate-500">No hay clientes específicos añadidos. Usa el botón superior para añadir uno o más.</p>
+                    )}
+
+                    {clients.map((client, index) => (
+                      <div key={index} className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-white p-4 rounded-xl border border-blue-100 relative pr-10">
                         <div className="space-y-1">
                           <label className="text-xs font-medium text-slate-600 ml-1">Nombre *</label>
-                          <input type="text" name="cliente" required defaultValue={editingObra?.cliente} className="w-full px-3 py-2 text-sm bg-white border border-slate-200 rounded-lg" placeholder="Nombre completo o Empresa" />
+                          <input type="text" required value={client.nombre} onChange={e => updateClient(index, 'nombre', e.target.value)} className="w-full px-3 py-2 text-sm bg-white border border-slate-200 rounded-lg" placeholder="Nombre completo" />
                         </div>
                         <div className="space-y-1">
-                          <label className="text-xs font-medium text-slate-600 ml-1">Teléfono</label>
-                          <input type="tel" name="clienteTelefono" defaultValue={editingObra?.clienteTelefono} className="w-full px-3 py-2 text-sm bg-white border border-slate-200 rounded-lg" placeholder="+34 600 000 000" />
+                          <label className="text-xs font-medium text-slate-600 ml-1">CIF</label>
+                          <input type="text" value={client.cif || ''} onChange={e => updateClient(index, 'cif', e.target.value)} className="w-full px-3 py-2 text-sm bg-white border border-slate-200 rounded-lg" placeholder="CIF/NIF" />
                         </div>
                         <div className="space-y-1">
-                          <label className="text-xs font-medium text-slate-600 ml-1">Correo Electrónico</label>
-                          <input type="email" name="clienteCorreo" defaultValue={editingObra?.clienteCorreo} className="w-full px-3 py-2 text-sm bg-white border border-slate-200 rounded-lg" placeholder="correo@ejemplo.com" />
+                          <label className="text-xs font-medium text-slate-600 ml-1">Dirección</label>
+                          <input type="text" value={client.direccion || ''} onChange={e => updateClient(index, 'direccion', e.target.value)} className="w-full px-3 py-2 text-sm bg-white border border-slate-200 rounded-lg" placeholder="Dirección de facturación" />
                         </div>
+                        <button type="button" onClick={() => removeClient(index)} className="absolute right-2 top-2 p-1.5 text-red-400 hover:bg-red-50 hover:text-red-600 rounded-lg">
+                          <Trash2 size={16} />
+                        </button>
                       </div>
-                    </div>
+                    ))}
+                  </div>
 
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {/* Arquitecto */}
                     <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100 space-y-4">
                       <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">

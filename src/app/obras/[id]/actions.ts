@@ -55,6 +55,11 @@ export async function createGastoObra(prevState: any, formData: FormData) {
         const formattedFecha = expense.fecha ? expense.fecha.toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
         const formattedFechaVencimiento = expense.fechaVencimiento ? expense.fechaVencimiento.toISOString().split('T')[0] : formattedFecha;
 
+        // Fetch supplier details
+        const supplier = expense.supplierId 
+          ? await prisma.supplier.findUnique({ where: { id: expense.supplierId } })
+          : null;
+
         const webhookUrl = process.env.N8N_WEBHOOK_URL || 'https://n8n.miempresa.online/webhook/gastos';
         const response = await fetch(webhookUrl, {
           method: 'POST',
@@ -65,7 +70,15 @@ export async function createGastoObra(prevState: any, formData: FormData) {
               ...expense,
               fecha: formattedFecha,
               numero: expense.numero || `G-${expense.id}`,
-              fechaVencimiento: formattedFechaVencimiento
+              fechaVencimiento: formattedFechaVencimiento,
+              proveedorNombre: supplier ? supplier.nombre : null,
+              proveedorEmail: supplier ? supplier.correo : null,
+              proveedor: supplier ? {
+                nombre: supplier.nombre,
+                correo: supplier.correo,
+                cif: supplier.cif,
+                telefono: supplier.telefono
+              } : null
             } 
           })
         });

@@ -3,7 +3,7 @@
 import { usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { Menu, X } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 
 export default function LayoutWrapper({ 
   children, 
@@ -15,11 +15,26 @@ export default function LayoutWrapper({
   const pathname = usePathname();
   const isAuthPage = pathname?.startsWith('/login');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   // Close mobile menu when route changes
   useEffect(() => {
     setIsMobileMenuOpen(false);
   }, [pathname]);
+
+  // Synchronize sidebar collapsed state via localStorage and CustomEvents
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('sidebar-collapsed') === 'true';
+      setIsSidebarCollapsed(stored);
+
+      const handleToggle = (e: Event) => {
+        setIsSidebarCollapsed((e as CustomEvent).detail);
+      };
+      window.addEventListener('sidebar-toggle', handleToggle);
+      return () => window.removeEventListener('sidebar-toggle', handleToggle);
+    }
+  }, []);
 
   if (isAuthPage) {
     return <main className="w-full min-h-screen">{children}</main>;
@@ -46,8 +61,9 @@ export default function LayoutWrapper({
 
       {/* Sidebar Wrapper */}
       <div className={`
-        fixed inset-y-0 left-0 z-40 transform transition-transform duration-300 ease-in-out
-        md:translate-x-0 w-64
+        fixed inset-y-0 left-0 z-40 transform transition-all duration-300 ease-in-out
+        md:translate-x-0 
+        ${isSidebarCollapsed ? 'w-20' : 'w-64'}
         ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}
       `}>
         {sidebar}
@@ -62,19 +78,19 @@ export default function LayoutWrapper({
       )}
 
       {/* Main Content */}
-      <main className="flex-1 md:ml-64 p-4 md:p-8 min-h-screen bg-slate-50 mt-16 md:mt-0 transition-all duration-300 w-full overflow-x-hidden relative">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={pathname}
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -15 }}
-            transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-            className="w-full"
-          >
-            {children}
-          </motion.div>
-        </AnimatePresence>
+      <main className={`
+        flex-1 p-4 md:p-8 min-h-screen bg-slate-50 mt-16 md:mt-0 transition-all duration-300 w-full overflow-x-hidden relative
+        ${isSidebarCollapsed ? 'md:ml-20' : 'md:ml-64'}
+      `}>
+        <motion.div
+          key={pathname}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+          className="w-full"
+        >
+          {children}
+        </motion.div>
       </main>
     </>
   );

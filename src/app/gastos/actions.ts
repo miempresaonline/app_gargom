@@ -25,7 +25,8 @@ export async function createGasto(prevState: any, formData: FormData) {
 
   const supplierId = formData.get('supplierId') ? parseInt(formData.get('supplierId') as string) : null;
   const estadoPago = formData.get('estadoPago') as string || 'Pendiente';
-  const esGastoB = formData.get('esGastoB') === 'on';
+  const esGastoB = formData.get('esGastoB') === 'on' || formData.get('esGastoB') === 'true';
+  const imagenUrl = formData.get('imagenUrl') as string || null;
 
   try {
     const expense = await prisma.expense.create({
@@ -43,7 +44,8 @@ export async function createGasto(prevState: any, formData: FormData) {
         observaciones,
         supplierId,
         estadoPago,
-        esGastoB
+        esGastoB,
+        imagenUrl
       },
     });
 
@@ -91,7 +93,8 @@ export async function updateGasto(prevState: any, formData: FormData) {
   
   const supplierId = formData.get('supplierId') ? parseInt(formData.get('supplierId') as string) : null;
   const estadoPago = formData.get('estadoPago') as string || 'Pendiente';
-  const esGastoB = formData.get('esGastoB') === 'on';
+  const esGastoB = formData.get('esGastoB') === 'on' || formData.get('esGastoB') === 'true';
+  const imagenUrl = formData.get('imagenUrl') as string || null;
 
   try {
     const expense = await prisma.expense.update({
@@ -110,7 +113,8 @@ export async function updateGasto(prevState: any, formData: FormData) {
         observaciones,
         supplierId,
         estadoPago,
-        esGastoB
+        esGastoB,
+        imagenUrl
       },
     });
     

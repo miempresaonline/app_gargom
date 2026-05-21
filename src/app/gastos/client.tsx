@@ -2,7 +2,7 @@
 
 import { useState, useTransition, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, X, Package, FileText, Calendar, Building, Landmark, Pickaxe, HardHat, FileUp, Loader2, Trash2, Users, Copy, Search, Edit2 } from 'lucide-react';
+import { Plus, X, Package, FileText, Calendar, Building, Landmark, Pickaxe, HardHat, FileUp, Loader2, Trash2, Users, Copy, Search, Edit2, Upload, Sparkles, CheckCircle2, AlertCircle, Eye } from 'lucide-react';
 import { createGasto, updateGasto, deleteGasto, parseInvoiceWithGroq } from './actions';
 
 export default function GastosClient({ 
@@ -23,40 +23,103 @@ export default function GastosClient({
   const [sortConfig, setSortConfig] = useState<{key: string, direction: 'asc'|'desc'}>({ key: 'fecha', direction: 'desc' });
   const [viewMode, setViewMode] = useState<'grid'|'table'>('table');
   
-  // AI Parsing
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  // Physical file upload state
+  const [uploadProgress, setUploadProgress] = useState<'idle' | 'uploading' | 'scanning' | 'success' | 'error'>('idle');
+  const [uploadedUrl, setUploadedUrl] = useState<string | null>(null);
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, mode: 'ia' | 'manual') => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    setIsAnalyzing(true);
+    setUploadProgress('uploading');
     setError(null);
+
+    const formData = new FormData();
+    formData.append('file', file);
+
     try {
-      const reader = new FileReader();
-      reader.onloadend = async () => {
-        const base64Data = reader.result as string;
-        const result = await parseInvoiceWithGroq(base64Data);
-        if (result.error) {
-          setError(result.error);
-        } else if (result.success && result.data) {
-          // Fill form via state editingGasto
-          setEditingGasto((prev: any) => ({
-             ...prev,
-             concepto: result.data.concepto || prev?.concepto || '',
-             numero: result.data.numero || prev?.numero || '',
-             importe: result.data.importe || prev?.importe || '',
-             fecha: result.data.fecha ? new Date(result.data.fecha).toISOString() : prev?.fecha,
-             fechaVencimiento: result.data.fechaVencimiento ? new Date(result.data.fechaVencimiento).toISOString() : prev?.fechaVencimiento
-          }));
-        }
-        setIsAnalyzing(false);
-      };
-      reader.readAsDataURL(file);
-    } catch (err) {
-      setError('Error al procesar el archivo localmente');
-      setIsAnalyzing(false);
+      const uploadRes = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!uploadRes.ok) throw new Error('Error al subir la factura');
+      const uploadData = await uploadRes.json();
+      setUploadedUrl(uploadData.url);
+
+      if (mode === 'ia') {
+        setUploadProgress('scanning');
+        
+        const reader = new FileReader();
+        reader.onloadend = async () => {
+          const base64 = reader.result as string;
+          const aiRes = await parseInvoiceWithGroq(base64);
+          
+          if (aiRes.error) {
+            setError(aiRes.error);
+            setUploadProgress('error');
+          } else if (aiRes.success && aiRes.data) {
+            const data = aiRes.data;
+            
+            // Fill form via state editingGasto
+            setEditingGasto((prev: any) => {
+              // Find matching supplier
+              let matchedSupplierId = prev?.supplierId || '';
+              if (data.concepto) {
+                const matched = proveedores.find(p => 
+                  data.concepto.toLowerCase().includes(p.nombre.toLowerCase()) || 
+                  p.nombre.toLowerCase().includes(data.concepto.toLowerCase())
+                );
+                if (matched) matchedSupplierId = matched.id;
+              }
+
+              return {
+                ...prev,
+                concepto: data.concepto || prev?.concepto || '',
+                importe: data.importe || prev?.importe || '',
+                numero: data.numero || prev?.numero || '',
+                fecha: data.fecha ? new Date(data.fecha).toISOString() : prev?.fecha,
+                fechaVencimiento: data.fechaVencimiento ? new Date(data.fechaVencimiento).toISOString() : prev?.fechaVencimiento,
+                supplierId: matchedSupplierId
+              };
+            });
+
+            setUploadProgress('success');
+          }
+        };
+        reader.readAsDataURL(file);
+      } else {
+        setUploadProgress('success');
+      }
+    } catch (err: any) {
+      console.error(err);
+      setError('Error en el proceso de carga: ' + err.message);
+      setUploadProgress('error');
+    }
+  };
+
+  const getPaymentBadge = (estado: string) => {
+    switch (estado) {
+      case 'Pagado':
+        return (
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+            Pagado
+          </span>
+        );
+      case 'Parcial':
+      case 'Pago parcial':
+        return (
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-sky-50 text-sky-700 border border-sky-200">
+            Pago Parcial
+          </span>
+        );
+      case 'Pendiente':
+      default:
+        return (
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200">
+            Pendiente
+          </span>
+        );
     }
   };
 
@@ -128,6 +191,8 @@ export default function GastosClient({
     setSelectedType('GENERAL');
     setSelectedWorkerId('');
     setHoras('');
+    setUploadProgress('idle');
+    setUploadedUrl(null);
     setError(null);
     setIsModalOpen(true);
   };
@@ -139,6 +204,8 @@ export default function GastosClient({
       setSelectedWorkerId(gasto.workerId?.toString() || '');
       setHoras(gasto.horas?.toString() || '');
     }
+    setUploadedUrl(gasto.imagenUrl || null);
+    setUploadProgress(gasto.imagenUrl ? 'success' : 'idle');
     setError(null);
     setIsModalOpen(true);
   };
@@ -150,6 +217,8 @@ export default function GastosClient({
       setSelectedWorkerId(gasto.workerId?.toString() || '');
       setHoras(gasto.horas?.toString() || '');
     }
+    setUploadedUrl(gasto.imagenUrl || null);
+    setUploadProgress(gasto.imagenUrl ? 'success' : 'idle');
     setError(null);
     setIsModalOpen(true);
     // Note: To perfectly prefill other fields in a non-controlled form when cloning,
@@ -294,7 +363,11 @@ export default function GastosClient({
                 exit={{ opacity: 0, scale: 0.95, filter: 'blur(5px)' }}
                 transition={{ delay: index * 0.05, type: 'spring', stiffness: 200, damping: 20 }}
                 whileHover={{ y: -8, scale: 1.02, transition: { duration: 0.2 } }}
-                className="bg-white/80 backdrop-blur-xl rounded-[24px] p-6 relative overflow-hidden group shadow-lg shadow-slate-200/50 hover:shadow-2xl hover:shadow-gargom-accent/20 border border-slate-100 flex gap-5 transition-all duration-300"
+                className={`bg-white/80 backdrop-blur-xl rounded-[24px] p-6 relative overflow-hidden group flex gap-5 transition-all duration-300 ${
+                  gasto.esGastoB
+                    ? 'border-amber-300 border-2 shadow-[0_8px_30px_rgba(245,158,11,0.12)] bg-amber-50/10'
+                    : 'border border-slate-100 shadow-lg shadow-slate-200/50 hover:shadow-xl hover:shadow-gargom-accent/10'
+                }`}
               >
                 {/* Background Glow Effect */}
                 <div className="absolute inset-0 bg-gradient-to-br from-white/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 z-0 pointer-events-none" />
@@ -304,14 +377,22 @@ export default function GastosClient({
 
                 <div className="flex-1 pl-4 space-y-3">
                   <div className="flex justify-between items-start">
-                    <div>
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold ${
-                        gasto.tipo === 'GENERAL' ? 'bg-purple-100 text-purple-700' :
-                        gasto.tipo === 'PERSONAL' ? 'bg-green-100 text-green-700' :
-                        'bg-orange-100 text-orange-700'
-                      }`}>
-                        {gasto.tipo}
-                      </span>
+                    <div className="space-y-1">
+                      <div className="flex flex-wrap gap-1.5 items-center">
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold ${
+                          gasto.tipo === 'GENERAL' ? 'bg-purple-100 text-purple-700' :
+                          gasto.tipo === 'PERSONAL' ? 'bg-green-100 text-green-700' :
+                          'bg-orange-100 text-orange-700'
+                        }`}>
+                          {gasto.tipo}
+                        </span>
+                        {getPaymentBadge(gasto.estadoPago)}
+                        {gasto.esGastoB && (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-amber-500/10 text-amber-700 border border-amber-500/20 shadow-sm animate-pulse">
+                            Gasto B
+                          </span>
+                        )}
+                      </div>
                       <h3 className="font-bold text-lg text-slate-800 mt-1">
                         {gasto.concepto || (gasto.tipo === 'PERSONAL' ? `Horas: ${gasto.worker?.nombre}` : `Factura ${gasto.numero}`)}
                       </h3>
@@ -351,6 +432,17 @@ export default function GastosClient({
 
                 {/* Action Buttons */}
                 <div className="flex flex-col gap-2 justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                  {gasto.imagenUrl && (
+                    <a 
+                      href={gasto.imagenUrl} 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      className="p-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition shadow-sm border border-blue-100 flex items-center justify-center" 
+                      title="Ver Factura"
+                    >
+                      <Eye size={16} />
+                    </a>
+                  )}
                   <button onClick={() => openEditModal(gasto)} className="p-2 bg-slate-50 text-slate-500 rounded-lg hover:bg-slate-200 transition shadow-sm border border-slate-200" title="Editar">
                     <Edit2 size={16} />
                   </button>
@@ -383,13 +475,19 @@ export default function GastosClient({
                   <th className="px-6 py-4 cursor-pointer hover:bg-slate-100 transition" onClick={() => handleSort('tipo')}>Tipo {sortConfig.key === 'tipo' && (sortConfig.direction === 'asc' ? '↑' : '↓')}</th>
                   <th className="px-6 py-4 cursor-pointer hover:bg-slate-100 transition" onClick={() => handleSort('concepto')}>Concepto {sortConfig.key === 'concepto' && (sortConfig.direction === 'asc' ? '↑' : '↓')}</th>
                   <th className="px-6 py-4 cursor-pointer hover:bg-slate-100 transition" onClick={() => handleSort('project')}>Obra {sortConfig.key === 'project' && (sortConfig.direction === 'asc' ? '↑' : '↓')}</th>
+                  <th className="px-6 py-4">Estado</th>
                   <th className="px-6 py-4 text-right cursor-pointer hover:bg-slate-100 transition" onClick={() => handleSort('importe')}>Importe {sortConfig.key === 'importe' && (sortConfig.direction === 'asc' ? '↑' : '↓')}</th>
                   <th className="px-6 py-4 text-center">Acciones</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {filteredGastos.map((gasto) => (
-                  <tr key={gasto.id} className="hover:bg-slate-50/50 transition-colors group">
+                  <tr 
+                    key={gasto.id} 
+                    className={`transition-colors group hover:bg-slate-50/50 ${
+                      gasto.esGastoB ? 'bg-amber-50/20 hover:bg-amber-100/30' : ''
+                    }`}
+                  >
                     <td className="px-6 py-4 whitespace-nowrap">
                       {gasto.fecha ? new Date(gasto.fecha).toLocaleDateString('es-ES') : '-'}
                     </td>
@@ -403,16 +501,37 @@ export default function GastosClient({
                       </span>
                     </td>
                     <td className="px-6 py-4 font-medium text-slate-800">
-                      {gasto.concepto || (gasto.tipo === 'PERSONAL' ? `Horas: ${gasto.worker?.nombre}` : `Factura ${gasto.numero}`)}
+                      <div className="flex items-center gap-2">
+                        <span>{gasto.concepto || (gasto.tipo === 'PERSONAL' ? `Horas: ${gasto.worker?.nombre}` : `Factura ${gasto.numero}`)}</span>
+                        {gasto.esGastoB && (
+                          <span className="inline-flex items-center px-1.5 py-0.2 rounded text-[9px] font-bold bg-amber-500/10 text-amber-700 border border-amber-500/20">
+                            B
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className="px-6 py-4">
                       {gasto.project?.cliente || '-'} <span className="text-xs text-slate-400 block">{gasto.project?.direccion}</span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {getPaymentBadge(gasto.estadoPago)}
                     </td>
                     <td className="px-6 py-4 text-right font-bold text-gargom-blue whitespace-nowrap">
                       {new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(gasto.importe || 0)}
                     </td>
                     <td className="px-6 py-4 text-center whitespace-nowrap">
                       <div className="flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        {gasto.imagenUrl && (
+                          <a 
+                            href={gasto.imagenUrl} 
+                            target="_blank" 
+                            rel="noopener noreferrer" 
+                            className="p-1.5 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded transition flex items-center justify-center" 
+                            title="Ver Factura"
+                          >
+                            <Eye size={16} />
+                          </a>
+                        )}
                         <button onClick={() => openEditModal(gasto)} className="p-1.5 text-slate-400 hover:text-gargom-accent hover:bg-blue-50 rounded transition" title="Editar">
                           <Edit2 size={16} />
                         </button>
@@ -473,6 +592,8 @@ export default function GastosClient({
                 </div>
 
                 <form key={editingGasto ? JSON.stringify(editingGasto) : 'new'} onSubmit={handleSubmit} className="space-y-6">
+                  <input type="hidden" name="imagenUrl" value={uploadedUrl || ''} />
+
                   {/* Tipo y Obra */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-1">
@@ -505,6 +626,97 @@ export default function GastosClient({
                       </select>
                     </div>
                   </div>
+
+                  {/* Physical invoice upload options (Only show for non-personal) */}
+                  {selectedType !== 'PERSONAL' && (
+                    <div className="space-y-3">
+                      <label className="text-sm font-medium text-slate-700 ml-1 flex items-center gap-1.5">
+                        <Upload size={16} className="text-slate-400" />
+                        Imagen / Factura Física (Carga y Escaneo)
+                      </label>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {/* Option 1: AI Scan */}
+                        <div className="border border-slate-200 rounded-2xl p-4 bg-slate-50/50 hover:bg-slate-50 transition-all flex flex-col justify-between items-center text-center relative overflow-hidden group">
+                          <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center mb-2">
+                            <Sparkles size={20} />
+                          </div>
+                          <span className="font-bold text-sm text-slate-800">Escanear factura con IA</span>
+                          <span className="text-xs text-slate-500 mt-1 max-w-xs">Sube la foto para procesar, guardar en la obra y autocompletar importes, fechas e información de forma real</span>
+                          <input 
+                            type="file" 
+                            accept="image/*"
+                            onChange={(e) => handleFileUpload(e, 'ia')}
+                            className="absolute inset-0 opacity-0 cursor-pointer"
+                          />
+                        </div>
+
+                        {/* Option 2: Manual Upload */}
+                        <div className="border border-slate-200 rounded-2xl p-4 bg-slate-50/50 hover:bg-slate-50 transition-all flex flex-col justify-between items-center text-center relative overflow-hidden group">
+                          <div className="w-10 h-10 rounded-full bg-slate-200 text-slate-600 flex items-center justify-center mb-2">
+                            <Upload size={20} />
+                          </div>
+                          <span className="font-bold text-sm text-slate-800">Subida Manual Directa</span>
+                          <span className="text-xs text-slate-500 mt-1 max-w-xs">Adjunta la foto o captura de la factura física para que se guarde de forma permanente en la obra sin analizar</span>
+                          <input 
+                            type="file" 
+                            accept="image/*"
+                            onChange={(e) => handleFileUpload(e, 'manual')}
+                            className="absolute inset-0 opacity-0 cursor-pointer"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Upload and AI Status View */}
+                      {uploadProgress !== 'idle' && (
+                        <div className="mt-4">
+                          {uploadProgress === 'uploading' && (
+                            <div className="bg-blue-50 border border-blue-100 rounded-xl p-3 flex items-center gap-2 text-blue-700 text-sm">
+                              <Loader2 size={16} className="animate-spin text-blue-500" />
+                              <span>Subiendo archivo al servidor...</span>
+                            </div>
+                          )}
+
+                          {uploadProgress === 'scanning' && (
+                            <div className="relative overflow-hidden bg-slate-900 rounded-xl h-24 flex items-center justify-center text-white">
+                              <div className="absolute inset-0 bg-gradient-to-b from-blue-500/10 to-transparent animate-pulse" />
+                              <motion.div 
+                                initial={{ top: 0 }}
+                                animate={{ top: '100%' }}
+                                transition={{ duration: 1.2, repeat: Infinity, repeatType: "reverse", ease: "linear" }}
+                                className="absolute left-0 right-0 h-[2px] bg-blue-500 shadow-[0_0_8px_#3b82f6] z-10" 
+                              />
+                              <div className="flex items-center gap-2 relative z-20">
+                                <Sparkles className="animate-spin text-blue-400" size={20} />
+                                <span className="font-bold text-xs text-slate-300">Gargom IA: Analizando y extrayendo conceptos...</span>
+                              </div>
+                            </div>
+                          )}
+
+                          {uploadProgress === 'success' && (
+                            <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-3 flex flex-col gap-2 text-emerald-700 text-sm">
+                              <div className="flex items-center gap-2">
+                                <CheckCircle2 size={16} className="text-emerald-500" />
+                                <span className="font-semibold">✓ Imagen cargada y asociada correctamente!</span>
+                              </div>
+                              {uploadedUrl && (
+                                <a href={uploadedUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 underline font-medium break-all pl-6">
+                                  Ver archivo subido: {uploadedUrl}
+                                </a>
+                              )}
+                            </div>
+                          )}
+
+                          {uploadProgress === 'error' && (
+                            <div className="bg-rose-50 border border-rose-100 rounded-xl p-3 flex items-center gap-2 text-rose-700 text-sm">
+                              <AlertCircle size={16} className="text-rose-500" />
+                              <span>Hubo un problema procesando el archivo. Inténtalo de nuevo.</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                   {/* Conditional Fields based on Type */}
                   <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100 space-y-4">
@@ -597,51 +809,6 @@ export default function GastosClient({
                             <input type="checkbox" name="esGastoB" defaultChecked={editingGasto?.esGastoB} className="w-5 h-5 rounded border-slate-300 text-gargom-accent focus:ring-gargom-accent" />
                             <span className="text-sm font-medium text-slate-700">Marcar como Gasto "B"</span>
                           </label>
-                        </div>
-                        <div className="space-y-1 md:col-span-2 mt-2">
-                          <label className="text-sm font-medium text-slate-700 ml-1">Extraer datos de factura con IA</label>
-                          <input 
-                            type="file" 
-                            accept="image/*" 
-                            ref={fileInputRef} 
-                            className="hidden" 
-                            onChange={handleFileUpload}
-                          />
-                          <div 
-                            onClick={() => !isAnalyzing && fileInputRef.current?.click()}
-                            className={`relative border-2 border-dashed border-slate-300 rounded-xl p-6 flex flex-col items-center justify-center bg-slate-50 transition-colors overflow-hidden ${isAnalyzing ? 'pointer-events-none border-gargom-accent/50' : 'hover:bg-slate-100 hover:border-gargom-accent cursor-pointer text-slate-400'}`}
-                          >
-                            {isAnalyzing ? (
-                              <div className="flex flex-col items-center justify-center relative w-full z-10 py-4">
-                                <div className="absolute inset-0 bg-gargom-accent/5 rounded-lg animate-pulse" />
-                                {/* Laser effect */}
-                                <motion.div 
-                                  className="absolute left-0 right-0 h-0.5 bg-gargom-accent shadow-[0_0_8px_2px_rgba(var(--color-gargom-accent),0.6)] z-20"
-                                  animate={{ top: ['0%', '100%', '0%'] }}
-                                  transition={{ duration: 2, ease: "linear", repeat: Infinity }}
-                                />
-                                <div className="relative flex flex-col items-center z-30 space-y-3">
-                                  <motion.div
-                                    animate={{ scale: [1, 1.1, 1] }}
-                                    transition={{ duration: 1.5, repeat: Infinity }}
-                                    className="bg-white p-3 rounded-full shadow-lg"
-                                  >
-                                    <FileUp size={28} className="text-gargom-accent" />
-                                  </motion.div>
-                                  <div className="flex flex-col items-center">
-                                    <span className="text-sm font-bold text-gargom-accent tracking-wide uppercase">IA Analizando...</span>
-                                    <span className="text-xs font-medium text-slate-500 mt-1">Extrayendo datos mágicamente</span>
-                                  </div>
-                                </div>
-                              </div>
-                            ) : (
-                              <>
-                                <FileUp size={24} className="mb-2" />
-                                <span className="text-sm font-medium text-slate-600">Sube una foto de la factura</span>
-                                <span className="text-xs mt-1 text-slate-500">La IA rellenará los campos automáticamente</span>
-                              </>
-                            )}
-                          </div>
                         </div>
                       </div>
                     )}

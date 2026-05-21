@@ -736,8 +736,20 @@ export default function GastosClient({
                           </select>
                         </div>
                         <div className="space-y-1">
+                          <label className="text-sm font-medium text-slate-700 ml-1">Número de Factura / Ticket</label>
+                          <input type="text" name="numero" defaultValue={editingGasto?.numero} className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl" placeholder="T-2026-001 o F-2026-001" />
+                        </div>
+                        <div className="space-y-1">
                           <label className="text-sm font-medium text-slate-700 ml-1">Importe (€) *</label>
                           <input type="number" name="importe" defaultValue={editingGasto?.importe} step="0.01" required className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl" placeholder="0.00" />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-sm font-medium text-slate-700 ml-1">Fecha de Factura / Gasto</label>
+                          <input type="date" name="fecha" defaultValue={editingGasto?.fecha ? new Date(editingGasto.fecha).toISOString().split('T')[0] : ''} className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl" />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-sm font-medium text-slate-700 ml-1">Fecha de Vencimiento</label>
+                          <input type="date" name="fechaVencimiento" defaultValue={editingGasto?.fechaVencimiento ? new Date(editingGasto.fechaVencimiento).toISOString().split('T')[0] : ''} className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl" />
                         </div>
                         <div className="space-y-1">
                           <label className="text-sm font-medium text-slate-700 ml-1">Estado de Pago</label>

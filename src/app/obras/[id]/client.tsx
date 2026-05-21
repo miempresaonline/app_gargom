@@ -989,6 +989,17 @@ export default function ObraDetailClient({
                           />
                         </div>
                         <div className="space-y-1">
+                          <label className="text-sm font-medium text-slate-700 ml-1">Número de Factura / Ticket</label>
+                          <input 
+                            type="text" 
+                            name="numero" 
+                            value={numero}
+                            onChange={e => setNumero(e.target.value)}
+                            className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl" 
+                            placeholder="T-2026-001 o F-2026-001" 
+                          />
+                        </div>
+                        <div className="space-y-1">
                           <label className="text-sm font-medium text-slate-700 ml-1">Importe (€) *</label>
                           <input 
                             type="number" 
@@ -1009,6 +1020,16 @@ export default function ObraDetailClient({
                             required 
                             value={fecha}
                             onChange={e => setFecha(e.target.value)}
+                            className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl" 
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-sm font-medium text-slate-700 ml-1">Fecha de Vencimiento</label>
+                          <input 
+                            type="date" 
+                            name="fechaVencimiento" 
+                            value={fechaVencimiento}
+                            onChange={e => setFechaVencimiento(e.target.value)}
                             className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl" 
                           />
                         </div>

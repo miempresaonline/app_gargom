@@ -18,7 +18,25 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es">
-      <body className={`${inter.className} bg-gargom-bg text-gargom-text min-h-screen flex`}>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              try {
+                const theme = localStorage.getItem('gargom-theme') || 'light';
+                const map = {
+                  light: 'theme-light',
+                  midnight: 'theme-dark-midnight',
+                  emerald: 'theme-light-emerald',
+                  carbon: 'theme-dark-carbon'
+                };
+                document.documentElement.classList.add(map[theme] || 'theme-light');
+              } catch (e) {}
+            `
+          }}
+        />
+      </head>
+      <body className={`${inter.className} bg-gargom-bg text-gargom-text min-h-screen flex transition-colors duration-300`}>
         <LayoutWrapper sidebar={<Sidebar />}>
           {children}
         </LayoutWrapper>

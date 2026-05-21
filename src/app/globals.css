@@ -1,28 +1,168 @@
 @import "tailwindcss";
 
 @theme {
-  --color-gargom-blue: #03194B;
-  --color-gargom-accent: #3B82F6; /* Electric blue for highlights */
-  --color-gargom-bg: #F8FAFC;
-  --color-gargom-card: #FFFFFF;
-  --color-gargom-text: #1E293B;
-  --color-gargom-muted: #64748B;
-  --color-gargom-border: #E2E8F0;
+  --color-gargom-blue: var(--gargom-blue);
+  --color-gargom-accent: var(--gargom-accent);
+  --color-gargom-bg: var(--gargom-bg);
+  --color-gargom-card: var(--gargom-card);
+  --color-gargom-text: var(--gargom-text);
+  --color-gargom-muted: var(--gargom-muted);
+  --color-gargom-border: var(--gargom-border);
   
   --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
-:root {
-  background-color: var(--color-gargom-bg);
-  color: var(--color-gargom-text);
+/* --- THEME SYSTEM DECLARATIONS --- */
+
+/* 1. Default fallback and Light Theme */
+:root, .theme-light {
+  --gargom-blue: #03194B;
+  --gargom-accent: #3B82F6;
+  --gargom-bg: #F8FAFC;
+  --gargom-card: #FFFFFF;
+  --gargom-text: #1E293B;
+  --gargom-muted: #64748B;
+  --gargom-border: #E2E8F0;
+  
+  /* Sidebar Variables */
+  --sidebar-bg: rgba(255, 255, 255, 0.85);
+  --sidebar-text: #1e293b;
+  --sidebar-border: rgba(226, 232, 240, 0.8);
+  --sidebar-active-bg: linear-gradient(to right, #eff6ff, rgba(239, 246, 255, 0.5));
+  --sidebar-active-border: rgba(191, 219, 254, 0.5);
+  --sidebar-active-line: linear-gradient(to bottom, #3b82f6, #4f46e5);
+  --sidebar-active-text: #1d4ed8;
+  --sidebar-active-icon: #2563eb;
+  --sidebar-hover-bg: rgba(241, 245, 249, 0.5);
+  --sidebar-muted: #94a3b8;
+  --sidebar-card-bg: #ffffff;
+  --sidebar-card-border: rgba(226, 232, 240, 0.6);
+  --sidebar-logo-filter: none;
+  
+  color-scheme: light;
 }
 
-body {
+/* 2. Midnight Dark Theme (Espacial Oscuro) */
+.theme-dark-midnight {
+  --gargom-blue: #0B1530;
+  --gargom-accent: #38BDF8;
+  --gargom-bg: #050D24;
+  --gargom-card: #0B1530;
+  --gargom-text: #E2E8F0;
+  --gargom-muted: #94A3B8;
+  --gargom-border: #1E294B;
+  
+  /* Sidebar Variables */
+  --sidebar-bg: rgba(11, 21, 48, 0.85);
+  --sidebar-text: #e2e8f0;
+  --sidebar-border: rgba(30, 41, 75, 0.8);
+  --sidebar-active-bg: linear-gradient(to right, rgba(56, 189, 248, 0.1), rgba(139, 92, 246, 0.05));
+  --sidebar-active-border: rgba(56, 189, 248, 0.2);
+  --sidebar-active-line: linear-gradient(to bottom, #38bdf8, #8b5cf6);
+  --sidebar-active-text: #38bdf8;
+  --sidebar-active-icon: #38bdf8;
+  --sidebar-hover-bg: rgba(255, 255, 255, 0.05);
+  --sidebar-muted: #64748b;
+  --sidebar-card-bg: #050D24;
+  --sidebar-card-border: rgba(30, 41, 75, 0.6);
+  --sidebar-logo-filter: brightness(0) invert(1) drop-shadow(0 0 8px rgba(56, 189, 248, 0.35));
+  
+  /* Tailwind Color Remapping for universal coverage in dark mode */
+  --color-white: #0B1530;
+  --color-slate-50: #050D24;
+  --color-slate-100: #07112C;
+  --color-slate-200: #1E294B;
+  --color-slate-300: #334155;
+  --color-slate-400: #475569;
+  --color-slate-500: #64748B;
+  --color-slate-600: #94A3B8;
+  --color-slate-700: #CBD5E1;
+  --color-slate-800: #E2E8F0;
+  --color-slate-900: #F1F5F9;
+  
+  color-scheme: dark;
+}
+
+/* 3. Emerald Mint Theme (Bosque Esmeralda) */
+.theme-light-emerald {
+  --gargom-blue: #064E3B;
+  --gargom-accent: #10B981;
+  --gargom-bg: #F4F7F5;
+  --gargom-card: #FFFFFF;
+  --gargom-text: #1F2937;
+  --gargom-muted: #6B7280;
+  --gargom-border: #E5E7EB;
+  
+  /* Sidebar Variables */
+  --sidebar-bg: rgba(255, 255, 255, 0.85);
+  --sidebar-text: #1f2937;
+  --sidebar-border: rgba(229, 231, 235, 0.8);
+  --sidebar-active-bg: linear-gradient(to right, #ecfdf5, rgba(236, 253, 245, 0.5));
+  --sidebar-active-border: rgba(167, 243, 208, 0.5);
+  --sidebar-active-line: linear-gradient(to bottom, #10b981, #059669);
+  --sidebar-active-text: #047857;
+  --sidebar-active-icon: #10b981;
+  --sidebar-hover-bg: rgba(243, 244, 246, 0.5);
+  --sidebar-muted: #9ca3af;
+  --sidebar-card-bg: #ffffff;
+  --sidebar-card-border: rgba(229, 231, 235, 0.6);
+  --sidebar-logo-filter: hue-rotate(80deg) saturate(1.2);
+  
+  color-scheme: light;
+}
+
+/* 4. Carbon Gold Theme (Obsidiana y Oro) */
+.theme-dark-carbon {
+  --gargom-blue: #292524;
+  --gargom-accent: #F59E0B;
+  --gargom-bg: #121212;
+  --gargom-card: #1E1E1E;
+  --gargom-text: #F5F5F4;
+  --gargom-muted: #A8A29E;
+  --gargom-border: #2E2E2E;
+  
+  /* Sidebar Variables */
+  --sidebar-bg: rgba(30, 30, 30, 0.85);
+  --sidebar-text: #f5f5f4;
+  --sidebar-border: rgba(46, 46, 46, 0.8);
+  --sidebar-active-bg: linear-gradient(to right, rgba(245, 158, 11, 0.1), rgba(217, 119, 6, 0.05));
+  --sidebar-active-border: rgba(245, 158, 11, 0.2);
+  --sidebar-active-line: linear-gradient(to bottom, #d97706, #f59e0b);
+  --sidebar-active-text: #f59e0b;
+  --sidebar-active-icon: #f59e0b;
+  --sidebar-hover-bg: rgba(255, 255, 255, 0.03);
+  --sidebar-muted: #78716c;
+  --sidebar-card-bg: #181818;
+  --sidebar-card-border: rgba(46, 46, 46, 0.6);
+  --sidebar-logo-filter: brightness(0) invert(1) drop-shadow(0 0 8px rgba(245, 158, 11, 0.35));
+  
+  /* Tailwind Color Remapping for universal coverage in dark mode */
+  --color-white: #1E1E1E;
+  --color-slate-50: #121212;
+  --color-slate-100: #181818;
+  --color-slate-200: #2E2E2E;
+  --color-slate-300: #444444;
+  --color-slate-400: #555555;
+  --color-slate-500: #78716c;
+  --color-slate-600: #a8a29e;
+  --color-slate-700: #d6d3d1;
+  --color-slate-800: #f5f5f4;
+  --color-slate-900: #fafaf9;
+  
+  color-scheme: dark;
+}
+
+/* --- GLOBAL LAYOUT TRANSITIONS --- */
+html, body {
   margin: 0;
   padding: 0;
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  background-color: var(--gargom-bg);
+  color: var(--gargom-text);
+  scroll-behavior: smooth;
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
 }
 
 /* Custom Scrollbar for a premium look */
@@ -34,26 +174,37 @@ body {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #CBD5E1;
+  background: var(--gargom-border);
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #94A3B8;
+  background: var(--gargom-muted);
 }
 
-/* Accessibility and premium selection */
+/* Premium selection matching current theme accent */
 ::selection {
-  background: rgba(59, 130, 246, 0.2);
-  color: #03194B;
+  background: var(--gargom-accent);
+  color: var(--gargom-card);
 }
 
 /* Global focus styles for accessibility */
 *:focus-visible {
-  outline: 2px solid var(--color-gargom-accent);
+  outline: 2px solid var(--gargom-accent);
   outline-offset: 2px;
-  border-radius: 2px;
 }
 
-html {
-  scroll-behavior: smooth;
+/* Custom scrollbar utility */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--gargom-border);
+  border-radius: 3px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--gargom-muted);
 }

@@ -218,14 +218,14 @@ export default function ObrasClient({ initialObras }: { initialObras: any[] }) {
                   </div>
                 </div>
 
-                <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100 grid grid-cols-2 gap-4">
-                  <div>
+                <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100 flex flex-wrap items-center justify-between gap-4">
+                  <div className="min-w-0">
                     <div className="text-xs text-slate-400 font-semibold uppercase tracking-wider mb-1">Presupuesto Total</div>
-                    <div className="font-bold text-lg text-gargom-accent">
+                    <div className="font-bold text-lg text-gargom-accent whitespace-nowrap">
                       {new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(obra.presupuestoTotal + obra.presupuestoAdicional)}
                     </div>
                   </div>
-                  <div className="flex flex-col justify-center items-end">
+                  <div className="shrink-0">
                     <Link href={`/obras/${obra.id}`} className="flex items-center gap-1 text-sm font-medium text-gargom-blue hover:text-gargom-accent transition-colors bg-gargom-blue/5 px-3 py-1.5 rounded-lg">
                       Ver Detalles <ArrowRight size={14} />
                     </Link>

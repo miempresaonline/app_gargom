@@ -131,7 +131,17 @@
 .theme-dark-midnight .bg-white,
 .theme-dark-carbon .bg-white,
 .theme-dark-midnight .focus\:bg-white:focus,
-.theme-dark-carbon .focus\:bg-white:focus {
+.theme-dark-carbon .focus\:bg-white:focus,
+.theme-dark-midnight .bg-white\/50,
+.theme-dark-midnight .bg-white\/60,
+.theme-dark-midnight .bg-white\/70,
+.theme-dark-midnight .bg-white\/80,
+.theme-dark-midnight .bg-white\/90,
+.theme-dark-carbon .bg-white\/50,
+.theme-dark-carbon .bg-white\/60,
+.theme-dark-carbon .bg-white\/70,
+.theme-dark-carbon .bg-white\/80,
+.theme-dark-carbon .bg-white\/90 {
   background-color: var(--gargom-card) !important;
 }
 
@@ -162,7 +172,7 @@
   color: var(--gargom-text) !important;
 }
 
-/* 4. Slate border corrections (Forms, inputs, rows, lines) */
+/* 4. Slate & White border corrections (Forms, inputs, rows, lines, and cards) */
 .theme-dark-midnight .border-slate-50,
 .theme-dark-midnight .border-slate-100,
 .theme-dark-midnight .border-slate-200,
@@ -172,7 +182,11 @@
 .theme-dark-carbon .border-slate-100,
 .theme-dark-carbon .border-slate-200,
 .theme-dark-carbon .border-slate-300,
-.theme-dark-carbon .border-slate-400 {
+.theme-dark-carbon .border-slate-400,
+.theme-dark-midnight .border-white,
+.theme-dark-midnight .border-white\/50,
+.theme-dark-carbon .border-white,
+.theme-dark-carbon .border-white\/50 {
   border-color: var(--gargom-border) !important;
 }
 
@@ -214,6 +228,40 @@
 .theme-dark-midnight option,
 .theme-dark-carbon option {
   background-color: var(--gargom-card) !important;
+  color: var(--gargom-text) !important;
+}
+
+/* 9. Decorative corner gradient in dashboard header */
+.theme-dark-midnight header .absolute.right-0.top-0 {
+  background-image: linear-gradient(to bottom right, rgba(56, 189, 248, 0.15), rgba(139, 92, 246, 0.05)) !important;
+}
+.theme-dark-carbon header .absolute.right-0.top-0 {
+  background-image: linear-gradient(to bottom right, rgba(245, 158, 11, 0.15), rgba(217, 119, 6, 0.05)) !important;
+}
+
+/* 10. Dashboard header "Sistema Activo" badge contrast adjustments */
+.theme-dark-midnight .bg-blue-50,
+.theme-dark-carbon .bg-blue-50 {
+  background-color: rgba(56, 189, 248, 0.1) !important;
+}
+.theme-dark-midnight .text-blue-600,
+.theme-dark-carbon .text-blue-600 {
+  color: var(--gargom-blue) !important;
+}
+.theme-dark-midnight .border-blue-100,
+.theme-dark-carbon .border-blue-100 {
+  border-color: rgba(56, 189, 248, 0.2) !important;
+}
+
+/* 11. Recharts Cartesian Grid and Tooltip customization */
+.theme-dark-midnight .recharts-cartesian-grid-horizontal line,
+.theme-dark-carbon .recharts-cartesian-grid-horizontal line {
+  stroke: var(--gargom-border) !important;
+}
+.theme-dark-midnight .recharts-default-tooltip,
+.theme-dark-carbon .recharts-default-tooltip {
+  background-color: var(--gargom-card) !important;
+  border: 1px solid var(--gargom-border) !important;
   color: var(--gargom-text) !important;
 }
 

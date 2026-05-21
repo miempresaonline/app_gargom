@@ -129,7 +129,9 @@
 
 /* 1. White Background Remapping (Panels, Cards, and Inputs become dark) */
 .theme-dark-midnight .bg-white,
-.theme-dark-carbon .bg-white {
+.theme-dark-carbon .bg-white,
+.theme-dark-midnight .focus\:bg-white:focus,
+.theme-dark-carbon .focus\:bg-white:focus {
   background-color: var(--gargom-card) !important;
 }
 
@@ -184,10 +186,14 @@
   background-color: var(--gargom-border) !important;
 }
 
-/* 6. List and table row hovers */
+/* 6. List, table row, and button hovers */
 .theme-dark-midnight .hover\:bg-slate-50:hover,
-.theme-dark-carbon .hover\:bg-slate-50:hover {
-  background-color: rgba(255, 255, 255, 0.03) !important;
+.theme-dark-carbon .hover\:bg-slate-50:hover,
+.theme-dark-midnight .hover\:bg-slate-100:hover,
+.theme-dark-carbon .hover\:bg-slate-100:hover,
+.theme-dark-midnight .hover\:bg-slate-200:hover,
+.theme-dark-carbon .hover\:bg-slate-200:hover {
+  background-color: rgba(255, 255, 255, 0.05) !important;
 }
 
 /* 7. Input and textarea placeholder color */
@@ -197,6 +203,18 @@
 .theme-dark-carbon textarea::placeholder {
   color: var(--gargom-muted) !important;
   opacity: 0.6;
+}
+
+/* 8. Select dropdowns & option elements legibility */
+.theme-dark-midnight select,
+.theme-dark-carbon select {
+  color: var(--gargom-text) !important;
+  background-color: var(--gargom-card) !important;
+}
+.theme-dark-midnight option,
+.theme-dark-carbon option {
+  background-color: var(--gargom-card) !important;
+  color: var(--gargom-text) !important;
 }
 
 /* --- GLOBAL LAYOUT TRANSITIONS --- */

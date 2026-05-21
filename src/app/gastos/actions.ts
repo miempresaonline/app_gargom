@@ -53,13 +53,20 @@ export async function createGasto(prevState: any, formData: FormData) {
     if (estadoPago === 'Pagado') {
       try {
         const webhookUrl = process.env.N8N_WEBHOOK_URL || 'https://n8n.miempresa.online/webhook/gastos';
-        fetch(webhookUrl, {
+        const response = await fetch(webhookUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ event: 'gasto_pagado', gasto: expense })
-        }).catch(err => console.error('Error enviando webhook n8n:', err));
+        });
+        if (!response.ok) {
+          console.error(`Error de n8n webhook al crear gasto: ${response.status} ${response.statusText}`);
+          const text = await response.text().catch(() => '');
+          console.error(`Detalle de respuesta de n8n: ${text}`);
+        } else {
+          console.log(`✅ Webhook enviado correctamente a n8n para el gasto ID ${expense.id}`);
+        }
       } catch (err) {
-        console.error('Error enviando webhook:', err);
+        console.error('Error enviando webhook n8n:', err);
       }
     }
 
@@ -122,13 +129,20 @@ export async function updateGasto(prevState: any, formData: FormData) {
     if (estadoPago === 'Pagado') {
       try {
         const webhookUrl = process.env.N8N_WEBHOOK_URL || 'https://n8n.miempresa.online/webhook/gastos';
-        fetch(webhookUrl, {
+        const response = await fetch(webhookUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ event: 'gasto_pagado', gasto: expense })
-        }).catch(err => console.error('Error enviando webhook n8n:', err));
+        });
+        if (!response.ok) {
+          console.error(`Error de n8n webhook al actualizar gasto: ${response.status} ${response.statusText}`);
+          const text = await response.text().catch(() => '');
+          console.error(`Detalle de respuesta de n8n: ${text}`);
+        } else {
+          console.log(`✅ Webhook enviado correctamente a n8n para el gasto ID ${expense.id}`);
+        }
       } catch (err) {
-        console.error('Error enviando webhook:', err);
+        console.error('Error enviando webhook n8n:', err);
       }
     }
 

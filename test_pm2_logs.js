@@ -9,7 +9,7 @@ conn.on('ready', () => {
     NODE_DIR=$(dirname $NPM_BIN) &&
     export PATH=$NODE_DIR:$PATH &&
     cd /var/www/vhosts/construccionesgargom.es/app.construccionesgargom.es &&
-    npx pm2 logs gargom --lines 30 --nostream
+    npx pm2 logs gargom --err --lines 50 --nostream
   `;
   
   conn.exec(cmd, (err, stream) => {

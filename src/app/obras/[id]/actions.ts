@@ -29,7 +29,7 @@ export async function createGastoObra(prevState: any, formData: FormData) {
   const supplierId = formData.get('supplierId') ? parseInt(formData.get('supplierId') as string) : null;
 
   try {
-    await prisma.expense.create({
+    const expense = await prisma.expense.create({
       data: {
         tipo,
         projectId,
@@ -48,6 +48,28 @@ export async function createGastoObra(prevState: any, formData: FormData) {
         supplierId
       },
     });
+
+    // Webhook to n8n
+    if (estadoPago === 'Pagado') {
+      try {
+        const webhookUrl = process.env.N8N_WEBHOOK_URL || 'https://n8n.miempresa.online/webhook/gastos';
+        const response = await fetch(webhookUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ event: 'gasto_pagado', gasto: expense })
+        });
+        if (!response.ok) {
+          console.error(`Error de n8n webhook al crear gasto de obra: ${response.status} ${response.statusText}`);
+          const text = await response.text().catch(() => '');
+          console.error(`Detalle de respuesta de n8n: ${text}`);
+        } else {
+          console.log(`✅ Webhook enviado correctamente a n8n para el gasto ID ${expense.id}`);
+        }
+      } catch (err) {
+        console.error('Error enviando webhook n8n:', err);
+      }
+    }
+
     revalidatePath(`/obras/${projectId}`);
     revalidatePath('/gastos');
     return { success: true };

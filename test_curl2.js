@@ -1,7 +1,7 @@
 const { Client } = require('ssh2');
 const conn = new Client();
 conn.on('ready', () => {
-  const cmd = `echo "--- LOCAL 3005 ---" && curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:3005/ && echo "\n--- DOMAIN ---" && curl -s -o /dev/null -w "%{http_code}" https://app.construccionesgargom.es/`;
+  const cmd = `curl -i -X POST -H "Content-Type: application/json" -d '{"test":true}' https://n8n.miempresa.online/webhook/gastos`;
   conn.exec(cmd, (err, stream) => {
     stream.on('data', d => console.log(d.toString())).stderr.on('data', d => console.log(d.toString())).on('close', () => conn.end());
   });

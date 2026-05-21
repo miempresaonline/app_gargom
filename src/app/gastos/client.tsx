@@ -744,8 +744,8 @@ export default function GastosClient({
                           <input type="number" name="importe" defaultValue={editingGasto?.importe} step="0.01" required className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl" placeholder="0.00" />
                         </div>
                         <div className="space-y-1">
-                          <label className="text-sm font-medium text-slate-700 ml-1">Fecha de Factura / Gasto</label>
-                          <input type="date" name="fecha" defaultValue={editingGasto?.fecha ? new Date(editingGasto.fecha).toISOString().split('T')[0] : ''} className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl" />
+                          <label className="text-sm font-medium text-slate-700 ml-1">Fecha de Factura / Gasto *</label>
+                          <input type="date" name="fecha" required defaultValue={editingGasto?.fecha ? new Date(editingGasto.fecha).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]} className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl" />
                         </div>
                         <div className="space-y-1">
                           <label className="text-sm font-medium text-slate-700 ml-1">Fecha de Vencimiento</label>

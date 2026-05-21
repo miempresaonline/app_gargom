@@ -52,11 +52,22 @@ export async function createGasto(prevState: any, formData: FormData) {
     // Webhook to n8n
     if (estadoPago === 'Pagado') {
       try {
+        const formattedFecha = expense.fecha ? expense.fecha.toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
+        const formattedFechaVencimiento = expense.fechaVencimiento ? expense.fechaVencimiento.toISOString().split('T')[0] : formattedFecha;
+
         const webhookUrl = process.env.N8N_WEBHOOK_URL || 'https://n8n.miempresa.online/webhook/gastos';
         const response = await fetch(webhookUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ event: 'gasto_pagado', gasto: expense })
+          body: JSON.stringify({ 
+            event: 'gasto_pagado', 
+            gasto: {
+              ...expense,
+              fecha: formattedFecha,
+              numero: expense.numero || `G-${expense.id}`,
+              fechaVencimiento: formattedFechaVencimiento
+            } 
+          })
         });
         if (!response.ok) {
           console.error(`Error de n8n webhook al crear gasto: ${response.status} ${response.statusText}`);
@@ -128,11 +139,22 @@ export async function updateGasto(prevState: any, formData: FormData) {
     // Webhook to n8n
     if (estadoPago === 'Pagado') {
       try {
+        const formattedFecha = expense.fecha ? expense.fecha.toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
+        const formattedFechaVencimiento = expense.fechaVencimiento ? expense.fechaVencimiento.toISOString().split('T')[0] : formattedFecha;
+
         const webhookUrl = process.env.N8N_WEBHOOK_URL || 'https://n8n.miempresa.online/webhook/gastos';
         const response = await fetch(webhookUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ event: 'gasto_pagado', gasto: expense })
+          body: JSON.stringify({ 
+            event: 'gasto_pagado', 
+            gasto: {
+              ...expense,
+              fecha: formattedFecha,
+              numero: expense.numero || `G-${expense.id}`,
+              fechaVencimiento: formattedFechaVencimiento
+            } 
+          })
         });
         if (!response.ok) {
           console.error(`Error de n8n webhook al actualizar gasto: ${response.status} ${response.statusText}`);

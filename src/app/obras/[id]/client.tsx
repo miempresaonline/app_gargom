@@ -2,16 +2,17 @@
 
 import { useActionState, useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Plus, X, Package, Calendar, Landmark, HardHat, Pickaxe, Loader2, Trash2, Users, Copy, Mail, Phone, User, FileCheck, Download, Hash } from 'lucide-react';
+import { ArrowLeft, Plus, X, Package, Calendar, Landmark, HardHat, Pickaxe, Loader2, Trash2, Users, Copy, Mail, Phone, User, FileCheck, Download, Hash, Eye, Upload, Sparkles, CheckCircle2, AlertCircle, Coins, Award } from 'lucide-react';
 import Link from 'next/link';
-import { createGastoObra, deleteGastoObra, createCertification } from './actions';
+import { createGastoObra, deleteGastoObra, createCertification, syncCertificationOdoo } from './actions';
+import { parseInvoiceWithGroq } from '../../gastos/actions';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
 export default function ObraDetailClient({ 
-  obra, bancos, trabajadores 
+  obra, bancos, trabajadores, proveedores = []
 }: { 
-  obra: any, bancos: any[], trabajadores: any[] 
+  obra: any, bancos: any[], trabajadores: any[], proveedores?: any[]
 }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedType, setSelectedType] = useState<string>('GENERAL');
@@ -21,10 +22,31 @@ export default function ObraDetailClient({
   const [isCertModalOpen, setIsCertModalOpen] = useState(false);
   const [certState, certFormAction, isCertPending] = useActionState(createCertification, null);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState<number | null>(null);
+  const [isSyncing, setIsSyncing] = useState<number | null>(null);
 
   const [selectedWorkerId, setSelectedWorkerId] = useState<string>('');
   const [horas, setHoras] = useState<string>('');
   const [personalImporte, setPersonalImporte] = useState<number>(0);
+
+  // Filter States
+  const [selectedMonth, setSelectedMonth] = useState<string>('ALL');
+  const [rangeStart, setRangeStart] = useState<string>('');
+  const [rangeEnd, setRangeEnd] = useState<string>('');
+
+  // Form Field States for Pre-filling and Data Control
+  const [concepto, setConcepto] = useState('');
+  const [importe, setImporte] = useState('');
+  const [numero, setNumero] = useState('');
+  const [fecha, setFecha] = useState(new Date().toISOString().split('T')[0]);
+  const [fechaVencimiento, setFechaVencimiento] = useState('');
+  const [estadoPago, setEstadoPago] = useState('Pendiente');
+  const [esGastoB, setEsGastoB] = useState(false);
+  const [supplierId, setSupplierId] = useState('');
+  const [bankId, setBankId] = useState('');
+
+  // IA upload & scan states
+  const [uploadProgress, setUploadProgress] = useState<'idle' | 'uploading' | 'scanning' | 'success' | 'error'>('idle');
+  const [uploadedUrl, setUploadedUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (selectedWorkerId && horas) {
@@ -86,10 +108,160 @@ export default function ObraDetailClient({
 
   const handleClone = async (gasto: any) => {
     setSelectedType(gasto.tipo);
+    setConcepto(gasto.concepto || '');
+    setImporte(gasto.importe ? gasto.importe.toString() : '');
+    setFecha(new Date().toISOString().split('T')[0]);
+    setSupplierId(gasto.supplierId ? gasto.supplierId.toString() : '');
+    setBankId(gasto.bankId ? gasto.bankId.toString() : '');
+    setEstadoPago('Pendiente');
+    setEsGastoB(gasto.esGastoB || false);
     setIsModalOpen(true);
   };
 
+  const handleOpenAddGasto = (type: string) => {
+    setSelectedType(type);
+    setConcepto('');
+    setImporte('');
+    setNumero('');
+    setFecha(new Date().toISOString().split('T')[0]);
+    setFechaVencimiento('');
+    setEstadoPago('Pendiente');
+    setEsGastoB(false);
+    setSupplierId('');
+    setBankId('');
+    setUploadedUrl(null);
+    setUploadProgress('idle');
+    setIsModalOpen(true);
+  };
+
+  // Upload Physical Invoice Handler
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, mode: 'ia' | 'manual') => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadProgress('uploading');
+    
+    // 1. Upload to physical storage via the upload API
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const uploadRes = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!uploadRes.ok) throw new Error('Error al subir la factura');
+      const uploadData = await uploadRes.json();
+      setUploadedUrl(uploadData.url);
+
+      // 2. Perform Groq AI extraction if mode is 'ia'
+      if (mode === 'ia') {
+        setUploadProgress('scanning');
+        
+        const reader = new FileReader();
+        reader.onloadend = async () => {
+          const base64 = reader.result as string;
+          const aiRes = await parseInvoiceWithGroq(base64);
+          
+          if (aiRes.error) {
+            alert(aiRes.error);
+            setUploadProgress('error');
+          } else if (aiRes.success && aiRes.data) {
+            const data = aiRes.data;
+            if (data.concepto) setConcepto(data.concepto);
+            if (data.importe) setImporte(data.importe.toString());
+            if (data.numero) setNumero(data.numero);
+            if (data.fecha) setFecha(data.fecha);
+            if (data.fechaVencimiento) setFechaVencimiento(data.fechaVencimiento);
+            
+            // Auto match supplier if found in concept
+            if (data.concepto) {
+              const matched = proveedores.find(p => 
+                data.concepto.toLowerCase().includes(p.nombre.toLowerCase()) || 
+                p.nombre.toLowerCase().includes(data.concepto.toLowerCase())
+              );
+              if (matched) setSupplierId(matched.id.toString());
+            }
+
+            setUploadProgress('success');
+          }
+        };
+        reader.readAsDataURL(file);
+      } else {
+        setUploadProgress('success');
+      }
+    } catch (err: any) {
+      console.error(err);
+      alert('Error en el proceso de carga: ' + err.message);
+      setUploadProgress('error');
+    }
+  };
+
+  // Get uniquely available months from expense history
+  const availableMonths = Array.from(
+    new Set<string>(
+      obra.expenses
+        .filter((e: any) => e.fecha)
+        .map((e: any) => {
+          const date = new Date(e.fecha);
+          const yyyy = date.getFullYear();
+          const mm = String(date.getMonth() + 1).padStart(2, '0');
+          return `${yyyy}-${mm}`;
+        })
+    )
+  ).sort((a: string, b: string) => b.localeCompare(a));
+
+  const formatMonthLabel = (monthStr: string) => {
+    const [year, month] = monthStr.split('-');
+    const monthNames = [
+      'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+      'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+    ];
+    return `${monthNames[parseInt(month) - 1]} ${year}`;
+  };
+
+  // Reactive Filters Execution
+  const filteredExpenses = obra.expenses.filter((gasto: any) => {
+    // Filter by single month
+    if (selectedMonth !== 'ALL' && gasto.fecha) {
+      const date = new Date(gasto.fecha);
+      const yyyy = date.getFullYear();
+      const mm = String(date.getMonth() + 1).padStart(2, '0');
+      const gastoMonth = `${yyyy}-${mm}`;
+      if (gastoMonth !== selectedMonth) return false;
+    }
+
+    // Filter by start month range
+    if (rangeStart && gasto.fecha) {
+      const date = new Date(gasto.fecha);
+      const yyyy = date.getFullYear();
+      const mm = String(date.getMonth() + 1).padStart(2, '0');
+      const gastoMonth = `${yyyy}-${mm}`;
+      if (gastoMonth < rangeStart) return false;
+    }
+
+    // Filter by end month range
+    if (rangeEnd && gasto.fecha) {
+      const date = new Date(gasto.fecha);
+      const yyyy = date.getFullYear();
+      const mm = String(date.getMonth() + 1).padStart(2, '0');
+      const gastoMonth = `${yyyy}-${mm}`;
+      if (gastoMonth > rangeEnd) return false;
+    }
+
+    return true;
+  });
+
+  // Category sum calculation
+  const getCategoryTotal = (type: string) => {
+    return filteredExpenses
+      .filter((e: any) => e.tipo === type)
+      .reduce((acc: number, curr: any) => acc + (curr.importe || 0), 0);
+  };
+
   const totalGastos = obra.expenses.reduce((acc: number, curr: any) => acc + (curr.importe || 0), 0);
+  const totalGastosFiltrados = filteredExpenses.reduce((acc: number, curr: any) => acc + (curr.importe || 0), 0);
   const rentabilidad = obra.presupuestoTotal - totalGastos;
   const porcentajeGastado = obra.presupuestoTotal > 0 ? (totalGastos / obra.presupuestoTotal) * 100 : 0;
 
@@ -115,7 +287,7 @@ export default function ObraDetailClient({
             <span>Nueva Certificación</span>
           </button>
           <button
-            onClick={() => { setSelectedType('GENERAL'); setIsModalOpen(true); }}
+            onClick={() => handleOpenAddGasto('GENERAL')}
             className="bg-gargom-accent hover:bg-blue-600 text-white px-5 py-2.5 rounded-xl font-medium flex items-center gap-2 transition-all shadow-lg shadow-gargom-accent/20 hover:shadow-xl hover:-translate-y-0.5 shrink-0"
           >
             <Plus size={20} strokeWidth={2.5} />
@@ -126,13 +298,20 @@ export default function ObraDetailClient({
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white rounded-3xl p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100">
+        <div className="bg-white rounded-3xl p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 relative overflow-hidden group">
+          <div className="absolute top-0 right-0 w-24 h-24 bg-gargom-accent/5 rounded-bl-full transition-transform group-hover:scale-110 pointer-events-none" />
           <p className="text-slate-500 font-medium text-sm uppercase tracking-wider mb-1">Presupuesto Total</p>
           <p className="text-3xl font-bold text-gargom-blue">
-            {new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(obra.presupuestoTotal)}
+            {new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(obra.presupuestoTotal + obra.presupuestoAdicional)}
           </p>
+          {obra.presupuestoAdicional > 0 && (
+            <p className="text-xs text-slate-400 mt-1">
+              Base: {new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(obra.presupuestoTotal)} | Adicional: +{new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(obra.presupuestoAdicional)}
+            </p>
+          )}
         </div>
-        <div className="bg-white rounded-3xl p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100">
+        <div className="bg-white rounded-3xl p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 relative overflow-hidden group">
+          <div className="absolute top-0 right-0 w-24 h-24 bg-orange-500/5 rounded-bl-full transition-transform group-hover:scale-110 pointer-events-none" />
           <p className="text-slate-500 font-medium text-sm uppercase tracking-wider mb-1">Total Gastos</p>
           <p className="text-3xl font-bold text-orange-500">
             {new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(totalGastos)}
@@ -141,7 +320,8 @@ export default function ObraDetailClient({
             <div className="bg-orange-500 h-full rounded-full transition-all" style={{ width: `${Math.min(porcentajeGastado, 100)}%` }} />
           </div>
         </div>
-        <div className="bg-white rounded-3xl p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100">
+        <div className="bg-white rounded-3xl p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 relative overflow-hidden group">
+          <div className="absolute top-0 right-0 w-24 h-24 bg-green-500/5 rounded-bl-full transition-transform group-hover:scale-110 pointer-events-none" />
           <p className="text-slate-500 font-medium text-sm uppercase tracking-wider mb-1">Rentabilidad Estimada</p>
           <p className={`text-3xl font-bold ${rentabilidad >= 0 ? 'text-green-500' : 'text-red-500'}`}>
             {new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(rentabilidad)}
@@ -157,6 +337,15 @@ export default function ObraDetailClient({
             <User size={14} /> Cliente
           </h4>
           <p className="font-bold text-slate-800">{obra.cliente}</p>
+          {obra.clients && obra.clients.length > 0 && (
+            <div className="border-t border-slate-100 pt-2 mt-2 space-y-1">
+              {obra.clients.map((c: any, index: number) => (
+                <div key={index} className="text-xs text-slate-600 font-medium">
+                  <span className="font-bold text-slate-800">{c.nombre}</span> {c.cif && `(${c.cif})`} {c.direccion && `- ${c.direccion}`}
+                </div>
+              ))}
+            </div>
+          )}
           {obra.clienteTelefono && (
             <div className="flex items-center gap-2 text-sm text-slate-600">
               <Phone size={14} className="text-slate-400" /> {obra.clienteTelefono}
@@ -210,84 +399,233 @@ export default function ObraDetailClient({
         )}
       </div>
 
-      {/* Gastos List */}
-      <div>
-        <h2 className="text-xl font-bold text-gargom-blue mb-4 flex items-center gap-2">
-          <Package size={20} /> Historial de Gastos
-        </h2>
-        {obra.expenses.length === 0 ? (
+      {/* Gastos Dashboard Tab Area */}
+      <div className="space-y-6">
+        {/* Title and Filters bar */}
+        <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-100">
+          <div>
+            <h2 className="text-xl font-bold text-gargom-blue flex items-center gap-2">
+              <Package size={20} /> Historial de Gastos
+            </h2>
+            <p className="text-xs text-slate-500 mt-0.5">Filtra y visualiza la distribución de costes</p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3 w-full xl:w-auto">
+            {/* Filter by Month Select */}
+            <select
+              value={selectedMonth}
+              onChange={(e) => {
+                setSelectedMonth(e.target.value);
+                setRangeStart('');
+                setRangeEnd('');
+              }}
+              className="px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-600 focus:outline-none focus:ring-2 focus:ring-gargom-accent/50"
+            >
+              <option value="ALL">Todos los meses</option>
+              {availableMonths.map(m => (
+                <option key={m} value={m}>{formatMonthLabel(m)}</option>
+              ))}
+            </select>
+
+            {/* Ranges */}
+            <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-semibold text-slate-500">
+              <span>Rango:</span>
+              <input
+                type="month"
+                value={rangeStart}
+                onChange={(e) => {
+                  setRangeStart(e.target.value);
+                  setSelectedMonth('ALL');
+                }}
+                className="focus:outline-none text-slate-700 bg-transparent"
+                placeholder="Desde"
+              />
+              <span>a</span>
+              <input
+                type="month"
+                value={rangeEnd}
+                onChange={(e) => {
+                  setRangeEnd(e.target.value);
+                  setSelectedMonth('ALL');
+                }}
+                className="focus:outline-none text-slate-700 bg-transparent"
+                placeholder="Hasta"
+              />
+              {(rangeStart || rangeEnd || selectedMonth !== 'ALL') && (
+                <button
+                  onClick={() => {
+                    setSelectedMonth('ALL');
+                    setRangeStart('');
+                    setRangeEnd('');
+                  }}
+                  className="text-red-500 hover:text-red-700 ml-1"
+                >
+                  Limpiar
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Category Sum Cards Panel */}
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+          <div className="bg-purple-50/50 border border-purple-100 rounded-2xl p-4 flex flex-col justify-between">
+            <span className="text-xs font-bold text-purple-700 uppercase tracking-wide">General</span>
+            <span className="text-lg font-black text-purple-900 mt-2">
+              {new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(getCategoryTotal('GENERAL'))}
+            </span>
+          </div>
+          <div className="bg-blue-50/50 border border-blue-100 rounded-2xl p-4 flex flex-col justify-between">
+            <span className="text-xs font-bold text-blue-700 uppercase tracking-wide">Industrial</span>
+            <span className="text-lg font-black text-blue-900 mt-2">
+              {new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(getCategoryTotal('INDUSTRIAL'))}
+            </span>
+          </div>
+          <div className="bg-orange-50/50 border border-orange-100 rounded-2xl p-4 flex flex-col justify-between">
+            <span className="text-xs font-bold text-orange-700 uppercase tracking-wide">Materiales</span>
+            <span className="text-lg font-black text-orange-900 mt-2">
+              {new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(getCategoryTotal('MATERIALES'))}
+            </span>
+          </div>
+          <div className="bg-indigo-50/50 border border-indigo-100 rounded-2xl p-4 flex flex-col justify-between">
+            <span className="text-xs font-bold text-indigo-700 uppercase tracking-wide">Servicios</span>
+            <span className="text-lg font-black text-indigo-900 mt-2">
+              {new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(getCategoryTotal('SERVICIOS'))}
+            </span>
+          </div>
+          <div className="bg-green-50/50 border border-green-100 rounded-2xl p-4 flex flex-col justify-between col-span-2 md:col-span-1">
+            <span className="text-xs font-bold text-green-700 uppercase tracking-wide">Personal</span>
+            <span className="text-lg font-black text-green-900 mt-2">
+              {new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(getCategoryTotal('PERSONAL'))}
+            </span>
+          </div>
+        </div>
+
+        {/* Expenses List */}
+        {filteredExpenses.length === 0 ? (
           <div className="text-center py-12 bg-white rounded-3xl border border-slate-100 shadow-sm">
             <Package size={48} className="mx-auto text-slate-200 mb-3" />
-            <p className="text-slate-500 font-medium">No hay gastos registrados en esta obra.</p>
+            <p className="text-slate-500 font-medium">No hay gastos que coincidan con los filtros seleccionados.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <AnimatePresence>
-              {obra.expenses.map((gasto: any, index: number) => (
-                <motion.div
-                  key={gasto.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.95 }}
-                  transition={{ delay: index * 0.05 }}
-                  className="bg-white rounded-2xl p-4 relative overflow-hidden group shadow-sm border border-slate-100 flex gap-4 hover:border-gargom-accent/30 transition-colors"
-                >
-                  <div className={`w-1.5 h-full absolute left-0 top-0 ${gasto.tipo === 'GENERAL' ? 'bg-purple-500' : gasto.tipo === 'PERSONAL' ? 'bg-green-500' : 'bg-orange-500'}`} />
+              {filteredExpenses.map((gasto: any, index: number) => {
+                const borderClass = gasto.esGastoB
+                  ? 'border-amber-300 shadow-[0_8px_30px_rgba(245,158,11,0.08)] bg-amber-50/10'
+                  : 'border-slate-100 shadow-sm bg-white';
+                
+                return (
+                  <motion.div
+                    key={gasto.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    transition={{ delay: index * 0.03 }}
+                    className={`rounded-2xl p-4 relative overflow-hidden group border flex gap-4 hover:border-gargom-accent/30 transition-all ${borderClass}`}
+                  >
+                    {/* Category bar decoration */}
+                    <div className={`w-1.5 h-full absolute left-0 top-0 ${
+                      gasto.tipo === 'GENERAL' ? 'bg-purple-500' : 
+                      gasto.tipo === 'PERSONAL' ? 'bg-green-500' : 
+                      gasto.tipo === 'INDUSTRIAL' ? 'bg-blue-500' :
+                      gasto.tipo === 'MATERIALES' ? 'bg-orange-500' : 'bg-indigo-500'
+                    }`} />
 
-                  <div className="flex-1 pl-3 space-y-2">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                          gasto.tipo === 'GENERAL' ? 'bg-purple-100 text-purple-700' :
-                          gasto.tipo === 'PERSONAL' ? 'bg-green-100 text-green-700' :
-                          'bg-orange-100 text-orange-700'
-                        }`}>
-                          {gasto.tipo}
-                        </span>
-                        <h3 className="font-bold text-slate-800 mt-1 leading-tight text-sm">
-                          {gasto.concepto || (gasto.tipo === 'PERSONAL' ? `Horas: ${gasto.worker?.nombre}` : `Factura ${gasto.numero}`)}
-                        </h3>
+                    <div className="flex-1 pl-3 space-y-2">
+                      <div className="flex justify-between items-start gap-4">
+                        <div className="space-y-1">
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider ${
+                              gasto.tipo === 'GENERAL' ? 'bg-purple-100 text-purple-700' :
+                              gasto.tipo === 'PERSONAL' ? 'bg-green-100 text-green-700' :
+                              gasto.tipo === 'INDUSTRIAL' ? 'bg-blue-100 text-blue-700' :
+                              gasto.tipo === 'MATERIALES' ? 'bg-orange-100 text-orange-700' :
+                              'bg-indigo-100 text-indigo-700'
+                            }`}>
+                              {gasto.tipo}
+                            </span>
+
+                            {/* Payment State badge */}
+                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider border ${
+                              gasto.estadoPago === 'Pagado' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' :
+                              gasto.estadoPago === 'Pago parcial' ? 'bg-sky-50 text-sky-700 border-sky-100' :
+                              'bg-rose-50 text-rose-700 border-rose-100'
+                            }`}>
+                              {gasto.estadoPago || 'Pendiente'}
+                            </span>
+
+                            {/* Gasto B badge */}
+                            {gasto.esGastoB && (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold bg-amber-500/20 text-amber-700 border border-amber-300">
+                                Gasto B
+                              </span>
+                            )}
+                          </div>
+
+                          <h3 className="font-bold text-slate-800 leading-tight text-sm">
+                            {gasto.concepto || (gasto.tipo === 'PERSONAL' ? `Horas: ${gasto.worker?.nombre}` : `Factura ${gasto.numero}`)}
+                          </h3>
+
+                          {gasto.supplier && (
+                            <p className="text-[11px] font-semibold text-slate-500 flex items-center gap-1">
+                              <span>Proveedor:</span>
+                              <span className="text-slate-700 font-bold">{gasto.supplier.nombre}</span>
+                            </p>
+                          )}
+                        </div>
+                        <div className="font-bold text-gargom-blue text-right shrink-0">
+                          {new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(gasto.importe || 0)}
+                        </div>
                       </div>
-                      <div className="font-bold text-gargom-blue">
-                        {new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(gasto.importe || 0)}
+
+                      <div className="text-xs text-slate-500 flex flex-wrap gap-x-4 gap-y-1 pt-1 border-t border-slate-50">
+                        {gasto.fecha && (
+                          <div className="flex items-center gap-1">
+                            <Calendar size={12} />
+                            <span>{new Date(gasto.fecha).toLocaleDateString('es-ES')}</span>
+                          </div>
+                        )}
+                        {gasto.tipo === 'PERSONAL' && gasto.horas && (
+                          <div className="flex items-center gap-1">
+                            <Users size={12} />
+                            <span>{gasto.horas} horas</span>
+                          </div>
+                        )}
+                        {gasto.bank && (
+                          <div className="flex items-center gap-1">
+                            <Coins size={12} className="text-slate-400" />
+                            <span className="truncate" title="Cuenta de Pago">{gasto.bank.nombre}</span>
+                          </div>
+                        )}
                       </div>
                     </div>
 
-                    <div className="text-xs text-slate-500 flex flex-wrap gap-x-4 gap-y-1">
-                      {gasto.fecha && (
-                        <div className="flex items-center gap-1">
-                          <Calendar size={12} />
-                          <span>{new Date(gasto.fecha).toLocaleDateString('es-ES')}</span>
-                        </div>
+                    {/* Actions */}
+                    <div className="flex flex-col gap-1 justify-center shrink-0">
+                      {gasto.imagenUrl && (
+                        <a 
+                          href={gasto.imagenUrl} 
+                          target="_blank" 
+                          rel="noreferrer" 
+                          className="p-1.5 bg-slate-50 hover:bg-slate-100 text-slate-500 rounded-lg transition shadow-sm border border-slate-200 flex items-center justify-center"
+                          title="Ver Factura"
+                        >
+                          <Eye size={14} />
+                        </a>
                       )}
-                      {gasto.tipo === 'PERSONAL' && gasto.horas && (
-                        <div className="flex items-center gap-1">
-                          <Users size={12} />
-                          <span>{gasto.horas} horas</span>
-                        </div>
+                      {gasto.tipo === 'PERSONAL' && (
+                        <button onClick={() => handleClone(gasto)} className="p-1.5 bg-slate-50 text-slate-500 rounded-lg hover:bg-slate-100 transition shadow-sm border border-slate-200" title="Clonar Gasto">
+                          <Copy size={14} />
+                        </button>
                       )}
-                      {['INDUSTRIAL', 'MATERIALES', 'SERVICIOS'].includes(gasto.tipo) && gasto.bank && (
-                        <div className="flex items-center gap-1">
-                          <Landmark size={12} />
-                          <span className="truncate">{gasto.bank.nombre}</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Actions */}
-                  <div className="flex flex-col gap-1 justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                    {gasto.tipo === 'PERSONAL' && (
-                      <button onClick={() => handleClone(gasto)} className="p-1.5 bg-slate-50 text-slate-500 rounded-lg hover:bg-slate-100 transition shadow-sm border border-slate-200" title="Clonar Gasto">
-                        <Copy size={14} />
+                      <button onClick={() => handleDelete(gasto.id)} disabled={isDeleting === gasto.id} className="p-1.5 bg-red-50 text-red-500 rounded-lg hover:bg-red-100 transition shadow-sm border border-red-100" title="Eliminar Gasto">
+                        {isDeleting === gasto.id ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
                       </button>
-                    )}
-                    <button onClick={() => handleDelete(gasto.id)} disabled={isDeleting === gasto.id} className="p-1.5 bg-red-50 text-red-500 rounded-lg hover:bg-red-100 transition shadow-sm border border-red-100" title="Eliminar Gasto">
-                      {isDeleting === gasto.id ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
-                    </button>
-                  </div>
-                </motion.div>
-              ))}
+                    </div>
+                  </motion.div>
+                );
+              })}
             </AnimatePresence>
           </div>
         )}
@@ -322,6 +660,11 @@ export default function ObraDetailClient({
                       <h3 className="font-bold text-lg text-slate-800 leading-tight">{cert.concepto}</h3>
                       <div className="flex items-center gap-1.5 text-xs text-slate-500 font-mono mt-1">
                         <Hash size={12} /> {cert.numero}
+                        {cert.enviadaOdoo && (
+                          <span className="ml-2 inline-flex items-center gap-0.5 px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-100 text-[10px] font-bold">
+                            ✓ Enviado a Odoo
+                          </span>
+                        )}
                       </div>
                     </div>
                     <div className="text-right">
@@ -333,10 +676,30 @@ export default function ObraDetailClient({
                   </div>
                   
                   <div className="pt-3 border-t border-slate-100 flex justify-end gap-2">
+                    {/* Odoo Sync Switch Button */}
+                    {cert.enviadaOdoo ? (
+                      <span className="text-xs bg-emerald-50 text-emerald-700 border border-emerald-100 px-3 py-1.5 rounded-lg font-bold flex items-center gap-1">
+                        ✓ Odoo Sincronizado
+                      </span>
+                    ) : (
+                      <button 
+                        onClick={async () => {
+                          setIsSyncing(cert.id);
+                          await syncCertificationOdoo(cert.id, obra.id);
+                          setIsSyncing(null);
+                        }}
+                        disabled={isSyncing === cert.id}
+                        className="text-xs bg-orange-50 text-orange-600 hover:bg-orange-100 px-3 py-1.5 rounded-lg font-medium flex items-center gap-1.5 transition-colors border border-orange-100"
+                      >
+                        {isSyncing === cert.id ? <Loader2 size={14} className="animate-spin" /> : <Award size={14} />}
+                        Sincronizar con Odoo
+                      </button>
+                    )}
+
                     <button 
                       onClick={() => handleGeneratePDF(cert)}
                       disabled={isGeneratingPDF === cert.id}
-                      className="text-xs bg-indigo-50 text-indigo-600 hover:bg-indigo-100 px-3 py-1.5 rounded-lg font-medium flex items-center gap-1.5 transition-colors"
+                      className="text-xs bg-indigo-50 text-indigo-600 hover:bg-indigo-100 px-3 py-1.5 rounded-lg font-medium flex items-center gap-1.5 transition-colors border border-indigo-100"
                     >
                       {isGeneratingPDF === cert.id ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
                       Generar Documento
@@ -455,7 +818,7 @@ export default function ObraDetailClient({
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl relative z-10 overflow-hidden border border-slate-100 max-h-[90vh] flex flex-col"
+              className="bg-white rounded-3xl shadow-2xl w-full max-w-3xl relative z-10 overflow-hidden border border-slate-100 max-h-[90vh] flex flex-col"
             >
               <div className="p-6 md:p-8 flex-1 overflow-y-auto custom-scrollbar">
                 <div className="flex justify-between items-center mb-6">
@@ -472,34 +835,182 @@ export default function ObraDetailClient({
 
                 <form action={formAction} className="space-y-6">
                   <input type="hidden" name="projectId" value={obra.id} />
+                  <input type="hidden" name="imagenUrl" value={uploadedUrl || ''} />
                   
-                  <div className="space-y-1">
-                    <label className="text-sm font-medium text-slate-700 ml-1">Tipo de Gasto *</label>
-                    <select 
-                      name="tipo" 
-                      value={selectedType}
-                      onChange={(e) => setSelectedType(e.target.value)}
-                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gargom-accent/50 transition-all font-medium text-slate-700"
-                    >
-                      <option value="GENERAL">General</option>
-                      <option value="INDUSTRIAL">Industrial</option>
-                      <option value="MATERIALES">Materiales</option>
-                      <option value="SERVICIOS">Servicios</option>
-                      <option value="PERSONAL">Personal</option>
-                    </select>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <label className="text-sm font-medium text-slate-700 ml-1">Tipo de Gasto *</label>
+                      <select 
+                        name="tipo" 
+                        value={selectedType}
+                        onChange={(e) => setSelectedType(e.target.value)}
+                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gargom-accent/50 transition-all font-medium text-slate-700"
+                      >
+                        <option value="GENERAL">General</option>
+                        <option value="INDUSTRIAL">Industrial</option>
+                        <option value="MATERIALES">Materiales</option>
+                        <option value="SERVICIOS">Servicios</option>
+                        <option value="PERSONAL">Personal</option>
+                      </select>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-sm font-medium text-slate-700 ml-1">Estado de Pago</label>
+                      <select
+                        name="estadoPago"
+                        value={estadoPago}
+                        onChange={e => setEstadoPago(e.target.value)}
+                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gargom-accent/50 transition-all font-medium text-slate-700"
+                      >
+                        <option value="Pendiente">Pendiente de Pago</option>
+                        <option value="Pago parcial">Pago Parcial</option>
+                        <option value="Pagado">Pagado</option>
+                      </select>
+                    </div>
                   </div>
+
+                  {/* Physical invoice upload options (Only show for non-personal) */}
+                  {selectedType !== 'PERSONAL' && (
+                    <div className="space-y-3">
+                      <label className="text-sm font-medium text-slate-700 ml-1 flex items-center gap-1.5">
+                        <Upload size={16} className="text-slate-400" />
+                        Imagen / Factura Física (Carga y Escaneo)
+                      </label>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {/* Option 1: AI Scan */}
+                        <div className="border border-slate-200 rounded-2xl p-4 bg-slate-50/50 hover:bg-slate-50 transition-all flex flex-col justify-between items-center text-center relative overflow-hidden group">
+                          <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center mb-2">
+                            <Sparkles size={20} />
+                          </div>
+                          <span className="font-bold text-sm text-slate-800">Escanear factura con IA</span>
+                          <span className="text-xs text-slate-500 mt-1 max-w-xs">Sube la foto para procesar, guardar en la obra y autocompletar importes, fechas e información de forma real</span>
+                          <input 
+                            type="file" 
+                            accept="image/*"
+                            onChange={(e) => handleFileUpload(e, 'ia')}
+                            className="absolute inset-0 opacity-0 cursor-pointer"
+                          />
+                        </div>
+
+                        {/* Option 2: Manual Upload */}
+                        <div className="border border-slate-200 rounded-2xl p-4 bg-slate-50/50 hover:bg-slate-50 transition-all flex flex-col justify-between items-center text-center relative overflow-hidden group">
+                          <div className="w-10 h-10 rounded-full bg-slate-200 text-slate-600 flex items-center justify-center mb-2">
+                            <Upload size={20} />
+                          </div>
+                          <span className="font-bold text-sm text-slate-800">Subida Manual Directa</span>
+                          <span className="text-xs text-slate-500 mt-1 max-w-xs">Adjunta la foto o captura de la factura física para que se guarde de forma permanente en la obra sin analizar</span>
+                          <input 
+                            type="file" 
+                            accept="image/*"
+                            onChange={(e) => handleFileUpload(e, 'manual')}
+                            className="absolute inset-0 opacity-0 cursor-pointer"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Upload and AI Status View */}
+                      {uploadProgress !== 'idle' && (
+                        <div className="mt-4">
+                          {uploadProgress === 'uploading' && (
+                            <div className="bg-blue-50 border border-blue-100 rounded-xl p-3 flex items-center gap-2 text-blue-700 text-sm">
+                              <Loader2 size={16} className="animate-spin text-blue-500" />
+                              <span>Subiendo archivo al servidor...</span>
+                            </div>
+                          )}
+
+                          {uploadProgress === 'scanning' && (
+                            <div className="relative overflow-hidden bg-slate-900 rounded-xl h-24 flex items-center justify-center text-white">
+                              <div className="absolute inset-0 bg-gradient-to-b from-blue-500/10 to-transparent animate-pulse" />
+                              <motion.div 
+                                initial={{ top: 0 }}
+                                animate={{ top: '100%' }}
+                                transition={{ duration: 1.2, repeat: Infinity, repeatType: "reverse", ease: "linear" }}
+                                className="absolute left-0 right-0 h-[2px] bg-blue-500 shadow-[0_0_8px_#3b82f6] z-10" 
+                              />
+                              <div className="flex items-center gap-2 relative z-20">
+                                <Sparkles className="animate-spin text-blue-400" size={20} />
+                                <span className="font-bold text-xs text-slate-300">Gargom IA: Analizando y extrayendo conceptos...</span>
+                              </div>
+                            </div>
+                          )}
+
+                          {uploadProgress === 'success' && (
+                            <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-3 flex items-center gap-2 text-emerald-700 text-sm">
+                              <CheckCircle2 size={16} className="text-emerald-500" />
+                              <span className="font-semibold">✓ Imagen cargada y asociada correctamente! URL: {uploadedUrl}</span>
+                            </div>
+                          )}
+
+                          {uploadProgress === 'error' && (
+                            <div className="bg-rose-50 border border-rose-100 rounded-xl p-3 flex items-center gap-2 text-rose-700 text-sm">
+                              <AlertCircle size={16} className="text-rose-500" />
+                              <span>Hubo un problema procesando el archivo. Inténtalo de nuevo.</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                   {/* Conditional Fields based on Type */}
                   <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100 space-y-4">
+                    {/* Supplier Select field - MANDATORY for all non-personal expenses */}
+                    {selectedType !== 'PERSONAL' && (
+                      <div className="space-y-1">
+                        <label className="text-sm font-medium text-slate-700 ml-1">Proveedor *</label>
+                        <select
+                          name="supplierId"
+                          required
+                          value={supplierId}
+                          onChange={e => setSupplierId(e.target.value)}
+                          className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-gargom-accent/50"
+                        >
+                          <option value="">Selecciona el proveedor obligatoriamente...</option>
+                          {proveedores.map(p => (
+                            <option key={p.id} value={p.id}>{p.nombre} {p.cif ? `(${p.cif})` : ''}</option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+
                     {selectedType === 'GENERAL' && (
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-1 md:col-span-2">
                           <label className="text-sm font-medium text-slate-700 ml-1">Concepto *</label>
-                          <input type="text" name="concepto" required className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl" placeholder="Ej. Material de oficina" />
+                          <input 
+                            type="text" 
+                            name="concepto" 
+                            required 
+                            value={concepto}
+                            onChange={e => setConcepto(e.target.value)}
+                            className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl" 
+                            placeholder="Ej. Material de oficina" 
+                          />
                         </div>
                         <div className="space-y-1">
                           <label className="text-sm font-medium text-slate-700 ml-1">Importe (€) *</label>
-                          <input type="number" name="importe" step="0.01" required className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl" placeholder="0.00" />
+                          <input 
+                            type="number" 
+                            name="importe" 
+                            step="0.01" 
+                            required 
+                            value={importe}
+                            onChange={e => setImporte(e.target.value)}
+                            className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-lg font-bold text-gargom-accent" 
+                            placeholder="0.00" 
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-sm font-medium text-slate-700 ml-1">Fecha de Gasto</label>
+                          <input 
+                            type="date" 
+                            name="fecha" 
+                            required 
+                            value={fecha}
+                            onChange={e => setFecha(e.target.value)}
+                            className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl" 
+                          />
                         </div>
                       </div>
                     )}
@@ -507,25 +1018,60 @@ export default function ObraDetailClient({
                     {['INDUSTRIAL', 'MATERIALES', 'SERVICIOS'].includes(selectedType) && (
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-1">
-                          <label className="text-sm font-medium text-slate-700 ml-1">Número de Factura</label>
-                          <input type="text" name="numero" required className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl" placeholder="F-2024-001" />
+                          <label className="text-sm font-medium text-slate-700 ml-1">Número de Factura *</label>
+                          <input 
+                            type="text" 
+                            name="numero" 
+                            required 
+                            value={numero}
+                            onChange={e => setNumero(e.target.value)}
+                            className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-mono" 
+                            placeholder="F-2026-001" 
+                          />
                         </div>
                         <div className="space-y-1">
                           <label className="text-sm font-medium text-slate-700 ml-1">Importe (€) *</label>
-                          <input type="number" name="importe" step="0.01" required className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl" placeholder="0.00" />
+                          <input 
+                            type="number" 
+                            name="importe" 
+                            step="0.01" 
+                            required 
+                            value={importe}
+                            onChange={e => setImporte(e.target.value)}
+                            className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-lg font-bold text-gargom-accent" 
+                            placeholder="0.00" 
+                          />
                         </div>
                         <div className="space-y-1">
                           <label className="text-sm font-medium text-slate-700 ml-1">Fecha de Factura</label>
-                          <input type="date" name="fecha" required className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl" />
+                          <input 
+                            type="date" 
+                            name="fecha" 
+                            required 
+                            value={fecha}
+                            onChange={e => setFecha(e.target.value)}
+                            className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl" 
+                          />
                         </div>
                         <div className="space-y-1">
                           <label className="text-sm font-medium text-slate-700 ml-1">Fecha de Vencimiento</label>
-                          <input type="date" name="fechaVencimiento" className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl" />
+                          <input 
+                            type="date" 
+                            name="fechaVencimiento" 
+                            value={fechaVencimiento}
+                            onChange={e => setFechaVencimiento(e.target.value)}
+                            className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl" 
+                          />
                         </div>
                         <div className="space-y-1 md:col-span-2">
-                          <label className="text-sm font-medium text-slate-700 ml-1">Banco Asociado</label>
-                          <select name="bankId" className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl">
-                            <option value="">Selecciona un banco...</option>
+                          <label className="text-sm font-medium text-slate-700 ml-1">Cuenta de Pago Asociada</label>
+                          <select 
+                            name="bankId" 
+                            value={bankId}
+                            onChange={e => setBankId(e.target.value)}
+                            className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl"
+                          >
+                            <option value="">Selecciona una cuenta de pago...</option>
                             {bancos.map(b => (
                               <option key={b.id} value={b.id}>{b.nombre} - {b.numeroCuenta}</option>
                             ))}
@@ -538,7 +1084,14 @@ export default function ObraDetailClient({
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-1">
                           <label className="text-sm font-medium text-slate-700 ml-1">Fecha (Día)</label>
-                          <input type="date" name="fecha" required className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl" />
+                          <input 
+                            type="date" 
+                            name="fecha" 
+                            required 
+                            value={fecha}
+                            onChange={e => setFecha(e.target.value)}
+                            className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl" 
+                          />
                         </div>
                         <div className="space-y-1">
                           <label className="text-sm font-medium text-slate-700 ml-1">Trabajador *</label>
@@ -584,6 +1137,22 @@ export default function ObraDetailClient({
                         </div>
                       </div>
                     )}
+
+                    {/* Es Gasto B Switch */}
+                    <div className="border-t border-slate-200 pt-4 flex items-center justify-between">
+                      <div className="flex flex-col">
+                        <span className="text-sm font-bold text-slate-800">¿Es Gasto B?</span>
+                        <span className="text-xs text-slate-400">Activa esta opción para registrarlo internamente</span>
+                      </div>
+                      <input 
+                        type="checkbox" 
+                        name="esGastoB" 
+                        value="true"
+                        checked={esGastoB}
+                        onChange={e => setEsGastoB(e.target.checked)}
+                        className="w-5 h-5 accent-amber-500 rounded cursor-pointer"
+                      />
+                    </div>
                   </div>
 
                   {state?.error && (
@@ -598,7 +1167,7 @@ export default function ObraDetailClient({
                     </button>
                     <button
                       type="submit"
-                      disabled={isPending}
+                      disabled={isPending || uploadProgress === 'uploading' || uploadProgress === 'scanning'}
                       className="bg-gargom-blue hover:bg-[#021033] text-white px-8 py-3 rounded-xl font-medium flex items-center justify-center gap-2 transition-all shadow-lg shadow-gargom-blue/20 hover:shadow-xl hover:-translate-y-0.5 disabled:opacity-70 disabled:pointer-events-none"
                     >
                       {isPending ? <Loader2 size={20} className="animate-spin" /> : <span>Guardar Gasto</span>}

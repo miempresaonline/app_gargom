@@ -35,7 +35,7 @@ export default function BancosClient({ initialBancos }: { initialBancos: any[] }
   };
 
   const handleDelete = async (id: number) => {
-    if (confirm('¿Seguro que deseas eliminar este banco?')) {
+    if (confirm('¿Seguro que deseas eliminar esta cuenta de pago?')) {
       setIsDeleting(id);
       await deleteBank(id);
       setIsDeleting(null);
@@ -56,15 +56,15 @@ export default function BancosClient({ initialBancos }: { initialBancos: any[] }
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gargom-blue tracking-tight">Bancos</h1>
-          <p className="text-slate-500 mt-1">Gestiona las cuentas bancarias</p>
+          <h1 className="text-3xl font-bold text-gargom-blue tracking-tight">Cuentas de Pago</h1>
+          <p className="text-slate-500 mt-1">Gestiona las cuentas y métodos de pago de la empresa</p>
         </div>
         <button
           onClick={() => setIsModalOpen(true)}
           className="bg-gargom-accent hover:bg-blue-600 text-white px-5 py-2.5 rounded-xl font-medium flex items-center gap-2 transition-all shadow-lg shadow-gargom-accent/20 hover:shadow-xl hover:shadow-gargom-accent/30 hover:-translate-y-0.5"
         >
           <Plus size={20} strokeWidth={2.5} />
-          <span>Añadir Banco</span>
+          <span>Añadir Cuenta de Pago</span>
         </button>
       </div>
 
@@ -76,7 +76,7 @@ export default function BancosClient({ initialBancos }: { initialBancos: any[] }
           </div>
           <input
             type="text"
-            placeholder="Buscar por nombre o cuenta..."
+            placeholder="Buscar por nombre o cuenta de pago..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gargom-accent/50 shadow-sm"
@@ -197,7 +197,7 @@ export default function BancosClient({ initialBancos }: { initialBancos: any[] }
             >
               <div className="p-6 md:p-8">
                 <div className="flex justify-between items-center mb-6">
-                  <h2 className="text-2xl font-bold text-gargom-blue">Añadir Banco</h2>
+                  <h2 className="text-2xl font-bold text-gargom-blue">Añadir Cuenta de Pago</h2>
                   <button 
                     onClick={() => setIsModalOpen(false)}
                     className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 transition-colors"
@@ -208,7 +208,7 @@ export default function BancosClient({ initialBancos }: { initialBancos: any[] }
 
                 <form action={formAction} className="space-y-5">
                   <div className="space-y-2">
-                    <label className="text-sm font-medium text-slate-700 ml-1">Nombre del Banco</label>
+                    <label className="text-sm font-medium text-slate-700 ml-1">Nombre de la Cuenta / Entidad</label>
                     <div className="relative">
                       <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
                         <Landmark size={18} />
@@ -218,7 +218,7 @@ export default function BancosClient({ initialBancos }: { initialBancos: any[] }
                         name="nombre"
                         required
                         className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-gargom-accent/50 focus:bg-white transition-all"
-                        placeholder="Ej. Santander"
+                        placeholder="Ej. Santander, Caja Rural..."
                       />
                     </div>
                   </div>
@@ -255,7 +255,7 @@ export default function BancosClient({ initialBancos }: { initialBancos: any[] }
                       disabled={isPending}
                       className="w-full bg-gargom-blue hover:bg-[#021033] text-white py-3.5 rounded-2xl font-medium flex items-center justify-center gap-2 transition-all shadow-lg shadow-gargom-blue/20 hover:shadow-xl hover:-translate-y-0.5 disabled:opacity-70 disabled:pointer-events-none"
                     >
-                      {isPending ? <Loader2 size={20} className="animate-spin" /> : <span>Añadir Banco</span>}
+                      {isPending ? <Loader2 size={20} className="animate-spin" /> : <span>Añadir Cuenta de Pago</span>}
                     </button>
                   </div>
                 </form>

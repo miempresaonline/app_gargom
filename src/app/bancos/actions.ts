@@ -23,7 +23,7 @@ export async function createBank(prevState: any, formData: FormData) {
     revalidatePath('/bancos');
     return { success: true };
   } catch (error) {
-    return { error: 'Error al crear la cuenta bancaria' };
+    return { error: 'Error al crear la cuenta de pago' };
   }
 }
 
@@ -45,7 +45,7 @@ export async function updateBank(id: number, nombre: string, numeroCuenta: strin
     revalidatePath('/bancos');
     return { success: true };
   } catch (error) {
-    return { error: 'Error al actualizar la cuenta bancaria' };
+    return { error: 'Error al actualizar la cuenta de pago' };
   }
 }
 
@@ -57,6 +57,6 @@ export async function deleteBank(id: number) {
     revalidatePath('/bancos');
     return { success: true };
   } catch (error) {
-    return { error: 'Error al eliminar la cuenta bancaria' };
+    return { error: 'Error al eliminar la cuenta de pago' };
   }
 }

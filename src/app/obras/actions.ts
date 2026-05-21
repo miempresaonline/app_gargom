@@ -136,3 +136,17 @@ export async function archiveProject(id: number) {
     return { error: 'Error al archivar la obra' };
   }
 }
+
+export async function unarchiveProject(id: number) {
+  try {
+    await prisma.project.update({
+      where: { id },
+      data: { estado: 'ACTIVA' }
+    });
+    revalidatePath('/obras');
+    return { success: true };
+  } catch (error) {
+    console.error(error);
+    return { error: 'Error al desarchivar la obra' };
+  }
+}

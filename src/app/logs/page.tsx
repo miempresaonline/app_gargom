@@ -2,13 +2,16 @@ import { getSession } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { redirect } from 'next/navigation';
 import { Shield, Clock, User, Activity } from 'lucide-react';
+import { cookies } from 'next/headers';
 
 export const dynamic = 'force-dynamic';
 
 export default async function LogsPage() {
   const session = await getSession();
+  const cookieStore = await cookies();
+  const devMode = cookieStore.get('gargom_dev_mode')?.value === 'true';
 
-  if (!session || session.email !== 'dpenuelaruiz7@gmail.com') {
+  if (!session || session.email !== 'dpenuelaruiz7@gmail.com' || !devMode) {
     redirect('/');
   }
 

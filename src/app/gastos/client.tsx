@@ -584,9 +584,9 @@ export default function GastosClient({
                           </select>
                         </div>
                         <div className="space-y-1">
-                          <label className="text-sm font-medium text-slate-700 ml-1">Banco Asociado</label>
+                          <label className="text-sm font-medium text-slate-700 ml-1">Cuenta de Pago</label>
                           <select name="bankId" defaultValue={editingGasto?.bankId} className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl">
-                            <option value="">Selecciona un banco...</option>
+                            <option value="">Selecciona una cuenta de pago...</option>
                             {bancos.map(b => (
                               <option key={b.id} value={b.id}>{b.nombre} - {b.numeroCuenta}</option>
                             ))}

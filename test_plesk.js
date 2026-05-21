@@ -1,7 +1,7 @@
 const { Client } = require('ssh2');
 const conn = new Client();
 conn.on('ready', () => {
-  const cmd = `plesk bin site -h || echo "No Plesk CLI access"`;
+  const cmd = `cd /var/www/vhosts/construccionesgargom.es/app.construccionesgargom.es && ln -sfn .next _next && echo "✅ Enlace simbólico _next creado en producción!"`;
   conn.exec(cmd, (err, stream) => {
     stream.on('data', d => console.log('STDOUT: ' + d.toString())).stderr.on('data', d => console.log('STDERR: ' + d.toString())).on('close', () => conn.end());
   });

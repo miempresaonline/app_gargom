@@ -2,8 +2,8 @@
 
 import { useState, useTransition } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, X, MapPin, User, Phone, Mail, HardHat, Pickaxe, Building, Loader2, Trash2, ArrowRight, Search, Edit2, Archive } from 'lucide-react';
-import { createProject, updateProject, archiveProject } from './actions';
+import { Plus, X, MapPin, User, Phone, Mail, HardHat, Pickaxe, Building, Loader2, Trash2, ArrowRight, Search, Edit2, Archive, ArchiveRestore } from 'lucide-react';
+import { createProject, updateProject, archiveProject, unarchiveProject } from './actions';
 import Link from 'next/link';
 
 export default function ObrasClient({ initialObras }: { initialObras: any[] }) {
@@ -12,14 +12,16 @@ export default function ObrasClient({ initialObras }: { initialObras: any[] }) {
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [isArchiving, setIsArchiving] = useState<number | null>(null);
+  const [isUnarchiving, setIsUnarchiving] = useState<number | null>(null);
+  const [showArchived, setShowArchived] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('recientes');
   
   // Dynamic clients state
   const [clients, setClients] = useState<any[]>([]);
 
-  // Filter out archived projects
-  const activeObras = initialObras.filter(o => o.estado !== 'ARCHIVADA');
+  // Filter based on active vs archived
+  const activeObras = initialObras.filter(o => showArchived ? o.estado === 'ARCHIVADA' : o.estado !== 'ARCHIVADA');
 
   const filteredObras = activeObras.filter(obra => 
     obra.direccion.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -51,6 +53,14 @@ export default function ObrasClient({ initialObras }: { initialObras: any[] }) {
       setIsArchiving(id);
       await archiveProject(id);
       setIsArchiving(null);
+    }
+  };
+
+  const handleUnarchive = async (id: number) => {
+    if (confirm('¿Seguro que deseas desarchivar esta obra? Volverá a aparecer en la lista activa.')) {
+      setIsUnarchiving(id);
+      await unarchiveProject(id);
+      setIsUnarchiving(null);
     }
   };
 
@@ -110,6 +120,28 @@ export default function ObrasClient({ initialObras }: { initialObras: any[] }) {
         </button>
       </div>
 
+      {/* Tabs */}
+      <div className="flex border-b border-slate-100 gap-6">
+        <button
+          onClick={() => setShowArchived(false)}
+          className={`pb-4 text-sm font-semibold tracking-wide transition-all relative ${!showArchived ? 'text-gargom-blue' : 'text-slate-400 hover:text-slate-600'}`}
+        >
+          Obras Activas
+          {!showArchived && (
+            <motion.div layoutId="activeTabUnderline" className="absolute bottom-0 left-0 right-0 h-[2px] bg-gargom-accent" />
+          )}
+        </button>
+        <button
+          onClick={() => setShowArchived(true)}
+          className={`pb-4 text-sm font-semibold tracking-wide transition-all relative ${showArchived ? 'text-gargom-blue' : 'text-slate-400 hover:text-slate-600'}`}
+        >
+          Obras Archivadas
+          {showArchived && (
+            <motion.div layoutId="activeTabUnderline" className="absolute bottom-0 left-0 right-0 h-[2px] bg-gargom-accent" />
+          )}
+        </button>
+      </div>
+
       {/* Filters & Search */}
       <div className="flex flex-col md:flex-row gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-100">
         <div className="relative flex-1">
@@ -155,12 +187,20 @@ export default function ObrasClient({ initialObras }: { initialObras: any[] }) {
               
               {/* Actions */}
               <div className="absolute top-4 right-4 z-20 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button onClick={() => openEditModal(obra)} className="p-2 bg-slate-50 text-slate-500 rounded-lg hover:bg-slate-200 transition">
-                  <Edit2 size={16} />
-                </button>
-                <button onClick={() => handleArchive(obra.id)} disabled={isArchiving === obra.id} className="p-2 bg-orange-50 text-orange-500 rounded-lg hover:bg-orange-100 transition" title="Archivar Obra">
-                  {isArchiving === obra.id ? <Loader2 size={16} className="animate-spin" /> : <Archive size={16} />}
-                </button>
+                {!showArchived ? (
+                  <>
+                    <button onClick={() => openEditModal(obra)} className="p-2 bg-slate-50 text-slate-500 rounded-lg hover:bg-slate-200 transition" title="Editar Obra">
+                      <Edit2 size={16} />
+                    </button>
+                    <button onClick={() => handleArchive(obra.id)} disabled={isArchiving === obra.id} className="p-2 bg-orange-50 text-orange-500 rounded-lg hover:bg-orange-100 transition" title="Archivar Obra">
+                      {isArchiving === obra.id ? <Loader2 size={16} className="animate-spin" /> : <Archive size={16} />}
+                    </button>
+                  </>
+                ) : (
+                  <button onClick={() => handleUnarchive(obra.id)} disabled={isUnarchiving === obra.id} className="p-2 bg-emerald-50 text-emerald-600 rounded-lg hover:bg-emerald-100 transition" title="Desarchivar Obra">
+                    {isUnarchiving === obra.id ? <Loader2 size={16} className="animate-spin" /> : <ArchiveRestore size={16} />}
+                  </button>
+                )}
               </div>
 
               {/* Left Column - Main Info */}
@@ -221,7 +261,9 @@ export default function ObrasClient({ initialObras }: { initialObras: any[] }) {
         
         {filteredObras.length === 0 && (
           <div className="col-span-full py-12 text-center bg-white rounded-3xl border border-slate-100">
-            <p className="text-slate-500 font-medium">No se han encontrado obras activas.</p>
+            <p className="text-slate-500 font-medium">
+              {showArchived ? 'No se han encontrado obras archivadas.' : 'No se han encontrado obras activas.'}
+            </p>
           </div>
         )}
       </div>

@@ -21,6 +21,12 @@ export async function createGastoObra(prevState: any, formData: FormData) {
   const workerId = formData.get('workerId') ? parseInt(formData.get('workerId') as string) : null;
   const horas = formData.get('horas') ? parseFloat(formData.get('horas') as string) : null;
   const observaciones = formData.get('observaciones') as string || null;
+  
+  // New Fields
+  const estadoPago = (formData.get('estadoPago') as string) || 'Pendiente';
+  const esGastoB = formData.get('esGastoB') === 'true';
+  const imagenUrl = (formData.get('imagenUrl') as string) || null;
+  const supplierId = formData.get('supplierId') ? parseInt(formData.get('supplierId') as string) : null;
 
   try {
     await prisma.expense.create({
@@ -35,13 +41,18 @@ export async function createGastoObra(prevState: any, formData: FormData) {
         bankId,
         workerId,
         horas,
-        observaciones
+        observaciones,
+        estadoPago,
+        esGastoB,
+        imagenUrl,
+        supplierId
       },
     });
     revalidatePath(`/obras/${projectId}`);
     revalidatePath('/gastos');
     return { success: true };
   } catch (error) {
+    console.error(error);
     return { error: 'Error al registrar el gasto' };
   }
 }
@@ -78,5 +89,20 @@ export async function createCertification(prevState: any, formData: FormData) {
     return { success: true };
   } catch (error) {
     return { error: 'Error al crear la certificación' };
+  }
+}
+
+export async function syncCertificationOdoo(id: number, projectId: number) {
+  try {
+    await prisma.certification.update({
+      where: { id },
+      data: { enviadaOdoo: true }
+    });
+    revalidatePath(`/obras/${projectId}`);
+    revalidatePath('/certificaciones');
+    return { success: true };
+  } catch (error) {
+    console.error(error);
+    return { error: 'Error al sincronizar con Odoo' };
   }
 }

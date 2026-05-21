@@ -44,7 +44,7 @@
 
 /* 2. Midnight Dark Theme (Espacial Oscuro) */
 .theme-dark-midnight {
-  --gargom-blue: #0B1530;
+  --gargom-blue: #38BDF8; /* Readable bright neon sky-blue for titles & highlights */
   --gargom-accent: #38BDF8;
   --gargom-bg: #050D24;
   --gargom-card: #0B1530;
@@ -66,21 +66,6 @@
   --sidebar-card-bg: #050D24;
   --sidebar-card-border: rgba(30, 41, 75, 0.6);
   --sidebar-logo-filter: brightness(0) invert(1) drop-shadow(0 0 8px rgba(56, 189, 248, 0.35));
-  
-  /* Tailwind Color Remapping for universal coverage in dark mode */
-  --color-white: #0B1530;
-  --color-slate-50: #050D24;
-  --color-slate-100: #07112C;
-  --color-slate-200: #1E294B;
-  --color-slate-300: #334155;
-  --color-slate-400: #475569;
-  --color-slate-500: #64748B;
-  --color-slate-600: #94A3B8;
-  --color-slate-700: #CBD5E1;
-  --color-slate-800: #E2E8F0;
-  --color-slate-900: #F1F5F9;
-  
-  color-scheme: dark;
 }
 
 /* 3. Emerald Mint Theme (Bosque Esmeralda) */
@@ -113,7 +98,7 @@
 
 /* 4. Carbon Gold Theme (Obsidiana y Oro) */
 .theme-dark-carbon {
-  --gargom-blue: #292524;
+  --gargom-blue: #F59E0B; /* Luxury amber-gold for titles & highlights */
   --gargom-accent: #F59E0B;
   --gargom-bg: #121212;
   --gargom-card: #1E1E1E;
@@ -135,21 +120,83 @@
   --sidebar-card-bg: #181818;
   --sidebar-card-border: rgba(46, 46, 46, 0.6);
   --sidebar-logo-filter: brightness(0) invert(1) drop-shadow(0 0 8px rgba(245, 158, 11, 0.35));
-  
-  /* Tailwind Color Remapping for universal coverage in dark mode */
-  --color-white: #1E1E1E;
-  --color-slate-50: #121212;
-  --color-slate-100: #181818;
-  --color-slate-200: #2E2E2E;
-  --color-slate-300: #444444;
-  --color-slate-400: #555555;
-  --color-slate-500: #78716c;
-  --color-slate-600: #a8a29e;
-  --color-slate-700: #d6d3d1;
-  --color-slate-800: #f5f5f4;
-  --color-slate-900: #fafaf9;
-  
+}
+
+/* --- UNIVERSAL DARK THEME OVERRIDES --- */
+.theme-dark-midnight, .theme-dark-carbon {
   color-scheme: dark;
+}
+
+/* 1. White Background Remapping (Panels, Cards, and Inputs become dark) */
+.theme-dark-midnight .bg-white,
+.theme-dark-carbon .bg-white {
+  background-color: var(--gargom-card) !important;
+}
+
+/* 2. Retain pure white text for labels inside colored containers and dark assets */
+.theme-dark-midnight .text-white,
+.theme-dark-carbon .text-white {
+  color: #ffffff !important;
+}
+
+/* 3. Slate text corrections for 100% legibility in dark mode */
+.theme-dark-midnight .text-slate-400,
+.theme-dark-carbon .text-slate-400 {
+  color: var(--gargom-muted) !important;
+  opacity: 0.85;
+}
+.theme-dark-midnight .text-slate-500,
+.theme-dark-carbon .text-slate-500 {
+  color: var(--gargom-muted) !important;
+}
+.theme-dark-midnight .text-slate-600,
+.theme-dark-carbon .text-slate-600,
+.theme-dark-midnight .text-slate-700,
+.theme-dark-carbon .text-slate-700,
+.theme-dark-midnight .text-slate-800,
+.theme-dark-carbon .text-slate-800,
+.theme-dark-midnight .text-slate-900,
+.theme-dark-carbon .text-slate-900 {
+  color: var(--gargom-text) !important;
+}
+
+/* 4. Slate border corrections (Forms, inputs, rows, lines) */
+.theme-dark-midnight .border-slate-50,
+.theme-dark-midnight .border-slate-100,
+.theme-dark-midnight .border-slate-200,
+.theme-dark-midnight .border-slate-300,
+.theme-dark-midnight .border-slate-400,
+.theme-dark-carbon .border-slate-50,
+.theme-dark-carbon .border-slate-100,
+.theme-dark-carbon .border-slate-200,
+.theme-dark-carbon .border-slate-300,
+.theme-dark-carbon .border-slate-400 {
+  border-color: var(--gargom-border) !important;
+}
+
+/* 5. Main page structural backgrounds remapping */
+.theme-dark-midnight .bg-slate-50,
+.theme-dark-carbon .bg-slate-50 {
+  background-color: var(--gargom-bg) !important;
+}
+.theme-dark-midnight .bg-slate-100,
+.theme-dark-carbon .bg-slate-100 {
+  background-color: var(--gargom-border) !important;
+}
+
+/* 6. List and table row hovers */
+.theme-dark-midnight .hover\:bg-slate-50:hover,
+.theme-dark-carbon .hover\:bg-slate-50:hover {
+  background-color: rgba(255, 255, 255, 0.03) !important;
+}
+
+/* 7. Input and textarea placeholder color */
+.theme-dark-midnight input::placeholder,
+.theme-dark-midnight textarea::placeholder,
+.theme-dark-carbon input::placeholder,
+.theme-dark-carbon textarea::placeholder {
+  color: var(--gargom-muted) !important;
+  opacity: 0.6;
 }
 
 /* --- GLOBAL LAYOUT TRANSITIONS --- */

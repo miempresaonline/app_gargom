@@ -89,11 +89,11 @@ export default function SidebarClient({ session, devMode }: SidebarClientProps) 
   }
 
   return (
-    <aside className="h-full w-full bg-[#050D24] text-white border-r border-white/5 flex flex-col z-50 overflow-visible relative shadow-[10px_0_30px_rgba(0,0,0,0.3)] select-none">
+    <aside className="h-full w-full bg-white/80 backdrop-blur-xl text-slate-800 border-r border-slate-200/80 flex flex-col z-50 overflow-visible relative shadow-[4px_0_30px_rgba(15,23,42,0.04)] select-none">
       {/* Collapse/Expand Floating Trigger Arrow Button */}
       <button
         onClick={toggleSidebar}
-        className="hidden md:flex absolute top-10 -right-3 z-[60] bg-[#050D24] hover:bg-blue-600 border border-white/10 text-white rounded-full p-1.5 shadow-lg transition-all hover:scale-110 active:scale-95 items-center justify-center cursor-pointer group"
+        className="hidden md:flex absolute top-10 -right-3 z-[60] bg-white hover:bg-slate-50 border border-slate-200 text-slate-500 hover:text-gargom-accent rounded-full p-1.5 shadow-md transition-all hover:scale-110 active:scale-95 items-center justify-center cursor-pointer group"
         title={isCollapsed ? "Desplegar menú" : "Colapsar menú"}
       >
         {isCollapsed ? (
@@ -104,20 +104,20 @@ export default function SidebarClient({ session, devMode }: SidebarClientProps) 
       </button>
 
       {/* Premium Decorative Orb (top right background glow) */}
-      <div className="absolute top-[-80px] right-[-80px] w-56 h-56 bg-gradient-to-br from-blue-600/20 to-purple-600/0 blur-[60px] rounded-full pointer-events-none" />
-      <div className="absolute bottom-[-100px] left-[-100px] w-64 h-64 bg-gradient-to-tr from-indigo-500/10 to-transparent blur-[70px] rounded-full pointer-events-none" />
+      <div className="absolute top-[-80px] right-[-80px] w-56 h-56 bg-gradient-to-br from-blue-500/5 to-purple-500/0 blur-[60px] rounded-full pointer-events-none" />
+      <div className="absolute bottom-[-100px] left-[-100px] w-64 h-64 bg-gradient-to-tr from-indigo-500/5 to-transparent blur-[70px] rounded-full pointer-events-none" />
 
       {/* Logo */}
-      <div className={`flex items-center justify-center border-b border-white/5 relative z-10 py-4 transition-all duration-300 ${isCollapsed ? 'h-20 px-2' : 'h-28 px-6'}`}>
+      <div className={`flex items-center justify-center border-b border-slate-100 relative z-10 py-4 transition-all duration-300 ${isCollapsed ? 'h-20 px-2' : 'h-28 px-6'}`}>
         {isCollapsed ? (
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-[0_0_15px_rgba(59,130,246,0.4)] border border-blue-400/30 select-none">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center shadow-[0_4px_12px_rgba(37,99,235,0.2)] select-none">
             <span className="text-white text-xl font-black tracking-tighter">G</span>
           </div>
         ) : (
           <img 
-            src="https://ltukyxwcvivaiuqaxlgo.supabase.co/storage/v1/object/sign/COSAS/gargom/logo_gargom_png_transparente_fondos_oscuros.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV83Y2FiZGYxMy0yNDVkLTQ2ZWUtYjFjNy0xM2Q3MGIwNTg5NDMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJDT1NBUy9nYXJnb20vbG9nb19nYXJnb21fcG5nX3RyYW5zcGFyZW50ZV9mb25kb3Nfb3NjdXJvcy5wbmciLCJpYXQiOjE3Nzc0MTM5NTEsImV4cCI6MTgwODk0OTk1MX0.6Elwrwg9io_tkVh0Pvefqmy3lV69BDs9V7BcpL0P5d8" 
+            src="https://ltukyxwcvivaiuqaxlgo.supabase.co/storage/v1/object/sign/COSAS/gargom/logo_gargom_png_transparente_fondos_claros%20(1).png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV83Y2FiZGYxMy0yNDVkLTQ2ZWUtYjFjNy0xM2Q3MGIwNTg5NDMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJDT1NBUy9nYXJnb20vbG9nb19nYXJnb21fcG5nX3RyYW5zcGFyZW50ZV9mb25kb3NfY2xhcm9zICgxKS5wbmciLCJpYXQiOjE3Nzc0MTM5MzEsImV4cCI6MTgwODk0OTkzMX0.DSR-3st04yu-p1jHlw_EmZ4VuhAt2tlybp7Rl0h5DLg" 
             alt="Gargom Logo" 
-            className="h-20 w-auto object-contain drop-shadow-[0_4px_12px_rgba(59,130,246,0.3)]"
+            className="h-20 w-auto object-contain drop-shadow-[0_4px_12px_rgba(37,99,235,0.1)]"
           />
         )}
       </div>
@@ -141,7 +141,7 @@ export default function SidebarClient({ session, devMode }: SidebarClientProps) 
                 <motion.div 
                   layoutId="activeNavBackground"
                   transition={{ type: 'spring', stiffness: 380, damping: 30 }}
-                  className="absolute inset-0 bg-gradient-to-r from-blue-600/30 to-indigo-600/10 border border-blue-500/20 rounded-xl"
+                  className="absolute inset-0 bg-gradient-to-r from-blue-50 to-indigo-50/50 border border-blue-100/50 rounded-xl"
                 />
               )}
 
@@ -150,7 +150,7 @@ export default function SidebarClient({ session, devMode }: SidebarClientProps) 
                 <motion.div
                   layoutId="activeNavLine"
                   transition={{ type: 'spring', stiffness: 380, damping: 30 }}
-                  className="absolute left-0 top-2 bottom-2 w-1 bg-gradient-to-b from-blue-400 to-indigo-500 rounded-r-full"
+                  className="absolute left-0 top-2 bottom-2 w-1 bg-gradient-to-b from-blue-500 to-indigo-600 rounded-r-full"
                 />
               )}
 
@@ -159,7 +159,7 @@ export default function SidebarClient({ session, devMode }: SidebarClientProps) 
                 <Icon 
                   size={18} 
                   className={`transition-colors duration-300 ${
-                    isActive ? 'text-blue-400 drop-shadow-[0_0_8px_rgba(96,165,250,0.6)]' : 'text-white/60 group-hover:text-white'
+                    isActive ? 'text-blue-600 drop-shadow-[0_0_8px_rgba(37,99,235,0.2)]' : 'text-slate-400 group-hover:text-slate-700'
                   }`} 
                 />
               </div>
@@ -168,7 +168,7 @@ export default function SidebarClient({ session, devMode }: SidebarClientProps) 
               {!isCollapsed && (
                 <span 
                   className={`font-semibold tracking-wide relative z-10 transition-colors duration-300 ${
-                    isActive ? 'text-white font-bold' : 'text-white/60 group-hover:text-white'
+                    isActive ? 'text-blue-700 font-extrabold' : 'text-slate-500 group-hover:text-slate-800'
                   }`}
                 >
                   {item.name}
@@ -176,30 +176,30 @@ export default function SidebarClient({ session, devMode }: SidebarClientProps) 
               )}
 
               {/* Hover highlight shimmer */}
-              <div className="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none rounded-xl" />
+              <div className="absolute inset-0 bg-slate-100/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none rounded-xl" />
             </Link>
           );
         })}
       </nav>
 
       {/* User profile & admin toggle */}
-      <div className={`border-t border-white/5 bg-[#03091c] relative z-10 flex flex-col transition-all duration-300 ${isCollapsed ? 'p-3 gap-3' : 'p-6 gap-4'}`}>
+      <div className={`border-t border-slate-100 bg-slate-50/50 relative z-10 flex flex-col transition-all duration-300 ${isCollapsed ? 'p-3 gap-3' : 'p-6 gap-4'}`}>
         {/* User Card */}
-        <div className={`flex items-center bg-white/5 rounded-2xl border border-white/5 backdrop-blur-md transition-all duration-300 ${isCollapsed ? 'p-2 justify-center' : 'p-3 gap-3'}`}>
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 via-indigo-500 to-indigo-700 flex items-center justify-center text-sm font-black shadow-lg shadow-blue-500/20 shrink-0">
+        <div className={`flex items-center bg-white rounded-2xl border border-slate-200/60 shadow-[0_2px_8px_rgba(15,23,42,0.02)] transition-all duration-300 ${isCollapsed ? 'p-2 justify-center' : 'p-3 gap-3'}`}>
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 via-indigo-600 to-indigo-800 flex items-center justify-center text-sm font-black text-white shadow-[0_2px_8px_rgba(37,99,235,0.15)] shrink-0">
             {session?.nombre?.charAt(0).toUpperCase() || 'U'}
           </div>
           {!isCollapsed && (
             <div className="flex-1 overflow-hidden">
-              <p className="text-xs font-black truncate text-white tracking-wide">{session?.nombre || 'Usuario'}</p>
-              <p className="text-[10px] text-white/40 truncate font-semibold">{session?.email || 'admin@gargom.es'}</p>
+              <p className="text-xs font-black truncate text-slate-800 tracking-wide">{session?.nombre || 'Usuario'}</p>
+              <p className="text-[10px] text-slate-400 truncate font-semibold">{session?.email || 'admin@gargom.es'}</p>
             </div>
           )}
         </div>
 
         {/* Developer Mode switch (Only for Admin email) */}
         {session?.email === 'dpenuelaruiz7@gmail.com' && (
-          <div className={`flex items-center bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/20 rounded-xl text-[11px] font-semibold text-amber-400 transition-all duration-300 ${isCollapsed ? 'p-2 justify-center' : 'p-2.5 justify-between'}`}>
+          <div className={`flex items-center bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl text-[11px] font-semibold text-amber-600 transition-all duration-300 ${isCollapsed ? 'p-2 justify-center' : 'p-2.5 justify-between'}`}>
             <div className="flex items-center gap-1.5 shrink-0" title="Modo Desarrollador">
               <Sparkles size={12} className="animate-pulse" />
               {!isCollapsed && <span>Modo Desarrollador</span>}
@@ -212,9 +212,9 @@ export default function SidebarClient({ session, devMode }: SidebarClientProps) 
               title={devMode ? "Desactivar funciones admin" : "Activar funciones admin"}
             >
               {devMode ? (
-                <ToggleRight size={isCollapsed ? 20 : 24} className="text-amber-400 cursor-pointer fill-amber-400/20" />
+                <ToggleRight size={isCollapsed ? 20 : 24} className="text-amber-500 cursor-pointer fill-amber-500/10" />
               ) : (
-                <ToggleLeft size={isCollapsed ? 20 : 24} className="text-white/30 cursor-pointer" />
+                <ToggleLeft size={isCollapsed ? 20 : 24} className="text-slate-300 cursor-pointer" />
               )}
             </button>
           </div>
@@ -226,7 +226,7 @@ export default function SidebarClient({ session, devMode }: SidebarClientProps) 
             onClick={handleLogout}
             disabled={isLoggingOut}
             title={isCollapsed ? "Cerrar Sesión" : undefined}
-            className={`flex items-center justify-center rounded-xl border border-red-500/10 hover:border-red-500/20 bg-red-500/5 hover:bg-red-500/10 text-red-400 hover:text-red-300 font-bold text-xs transition-all tracking-wide disabled:opacity-50 ${isCollapsed ? 'p-2.5 w-10 mx-auto' : 'w-full py-2.5 gap-2'}`}
+            className={`flex items-center justify-center rounded-xl border border-red-200 hover:border-red-300 bg-red-50/50 hover:bg-red-50 text-red-600 hover:text-red-700 font-bold text-xs transition-all tracking-wide disabled:opacity-50 shadow-[0_2px_6px_rgba(239,68,68,0.02)] ${isCollapsed ? 'p-2.5 w-10 mx-auto' : 'w-full py-2.5 gap-2'}`}
           >
             {isLoggingOut ? (
               <Loader2 size={14} className="animate-spin" />
@@ -238,12 +238,12 @@ export default function SidebarClient({ session, devMode }: SidebarClientProps) 
 
           {!isCollapsed ? (
             <div className="text-center">
-              <span className="text-[9px] font-mono text-white/20 font-black tracking-widest uppercase hover:text-white/40 transition-colors cursor-default select-none">
+              <span className="text-[9px] font-mono text-slate-300 font-black tracking-widest uppercase hover:text-slate-500 transition-colors cursor-default select-none">
                 Gargom ERP v1.5.0
               </span>
             </div>
           ) : (
-            <div className="text-center font-mono text-[8px] text-white/20 font-black tracking-tight select-none">
+            <div className="text-center font-mono text-[8px] text-slate-300 font-black tracking-tight select-none">
               v1.5
             </div>
           )}

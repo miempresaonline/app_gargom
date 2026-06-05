@@ -5,7 +5,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, X, FileCheck, Building, Hash, Loader2, Trash2, ArrowUpRight, CheckCircle2, Search, Edit2 } from 'lucide-react';
 import { createCertification, updateCertification, deleteCertification, sendToOdoo } from './actions';
 
-export default function CertificacionesClient({ initialCertificaciones, obras }: { initialCertificaciones: any[], obras: any[] }) {
+export default function CertificacionesClient({ 
+  initialCertificaciones, obras, nextCertNumber = 'CERT-1' 
+}: { 
+  initialCertificaciones: any[], obras: any[], nextCertNumber?: string 
+}) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCert, setEditingCert] = useState<any>(null);
   const [isPending, startTransition] = useTransition();
@@ -171,7 +175,8 @@ export default function CertificacionesClient({ initialCertificaciones, obras }:
                       
                       // Format currency
                       const formatMoney = (n: number) => new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(n);
-                      const iva = cert.importe * 0.21;
+                      const ivaRate = cert.project?.porcentajeImpuesto ?? 10;
+                      const iva = cert.importe * (ivaRate / 100);
                       const total = cert.importe + iva;
                       const fecha = new Date(cert.createdAt || Date.now()).toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' });
 
@@ -227,7 +232,7 @@ export default function CertificacionesClient({ initialCertificaciones, obras }:
                                 <span>${formatMoney(cert.importe)}</span>
                               </div>
                               <div style="display: flex; justify-content: space-between; margin-bottom: 15px; color: #64748b; font-size: 14px;">
-                                <span>IVA (21%)</span>
+                                <span>IVA (${ivaRate}%)</span>
                                 <span>${formatMoney(iva)}</span>
                               </div>
                               <div style="display: flex; justify-content: space-between; padding-top: 15px; border-top: 2px solid #e2e8f0; color: #0f172a; font-size: 18px; font-weight: 800;">
@@ -326,7 +331,7 @@ export default function CertificacionesClient({ initialCertificaciones, obras }:
               <div className="p-6 md:p-8">
                 <div className="flex justify-between items-center mb-6">
                   <h2 className="text-2xl font-bold text-gargom-blue flex items-center gap-2">
-                    <FileCheck size={24} className="text-gargom-accent" /> {editingCert ? 'Editar Certificación' : 'Nueva Certificación'}
+                    <FileCheck size={24} className="text-gargom-accent" /> {editingCert ? 'Editar Factura / Certificación' : 'Nueva Factura / Certificación'}
                   </h2>
                   <button 
                     onClick={() => setIsModalOpen(false)}
@@ -354,14 +359,14 @@ export default function CertificacionesClient({ initialCertificaciones, obras }:
 
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1">
-                      <label className="text-sm font-medium text-slate-700 ml-1">Número *</label>
+                      <label className="text-sm font-medium text-slate-700 ml-1">Número de Factura *</label>
                       <input
                         type="text"
                         name="numero"
                         required
-                        defaultValue={editingCert?.numero}
+                        defaultValue={editingCert ? editingCert.numero : nextCertNumber}
                         className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gargom-accent/50 transition-all font-mono"
-                        placeholder="CERT-001"
+                        placeholder="FACT-001"
                       />
                     </div>
                     <div className="space-y-1">
@@ -402,7 +407,7 @@ export default function CertificacionesClient({ initialCertificaciones, obras }:
                       disabled={isPending}
                       className="w-full bg-gargom-blue hover:bg-[#021033] text-white py-3.5 rounded-2xl font-medium flex items-center justify-center gap-2 transition-all shadow-lg shadow-gargom-blue/20 hover:shadow-xl hover:-translate-y-0.5 disabled:opacity-70 disabled:pointer-events-none"
                     >
-                      {isPending ? <Loader2 size={20} className="animate-spin" /> : <span>{editingCert ? 'Guardar Cambios' : 'Guardar Certificación'}</span>}
+                      {isPending ? <Loader2 size={20} className="animate-spin" /> : <span>{editingCert ? 'Guardar Cambios' : 'Guardar Factura / Certificación'}</span>}
                     </button>
                   </div>
                 </form>

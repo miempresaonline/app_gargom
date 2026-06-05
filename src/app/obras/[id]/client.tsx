@@ -10,9 +10,9 @@ import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
 export default function ObraDetailClient({ 
-  obra, bancos, trabajadores, proveedores = []
+  obra, bancos, trabajadores, proveedores = [], nextCertNumber = 'CERT-1'
 }: { 
-  obra: any, bancos: any[], trabajadores: any[], proveedores?: any[]
+  obra: any, bancos: any[], trabajadores: any[], proveedores?: any[], nextCertNumber?: string
 }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedType, setSelectedType] = useState<string>('GENERAL');
@@ -274,8 +274,11 @@ export default function ObraDetailClient({
             <ArrowLeft size={16} /> Volver a Obras
           </Link>
           <h1 className="text-3xl font-bold text-gargom-blue tracking-tight">{obra.direccion}</h1>
+          {obra.nombreReferencia && (
+            <div className="text-sm font-semibold text-gargom-accent">Ref: {obra.nombreReferencia}</div>
+          )}
           <div className="flex items-center gap-2 text-slate-500">
-            <Users size={16} /> <span className="font-medium">{obra.cliente}</span>
+            <Users size={16} /> <span className="font-medium">{obra.clients && obra.clients.length > 0 ? obra.clients.map((c: any) => c.nombre).join(', ') : obra.cliente}</span>
           </div>
         </div>
         <div className="flex gap-2">
@@ -341,7 +344,7 @@ export default function ObraDetailClient({
             <div className="border-t border-slate-100 pt-2 mt-2 space-y-1">
               {obra.clients.map((c: any, index: number) => (
                 <div key={index} className="text-xs text-slate-600 font-medium">
-                  <span className="font-bold text-slate-800">{c.nombre}</span> {c.cif && `(${c.cif})`} {c.direccion && `- ${c.direccion}`}
+                  <span className="font-bold text-slate-800">{c.nombre}</span> {c.porcentajeFacturacion && `(${c.porcentajeFacturacion}%)`} {c.cif && `(${c.cif})`} {c.direccion && `- ${c.direccion}`}
                 </div>
               ))}
             </div>
@@ -1241,8 +1244,8 @@ export default function ObraDetailClient({
                   </div>
                   
                   <div className="space-y-1">
-                    <label className="text-sm font-medium text-slate-700 ml-1">Número de Certificación *</label>
-                    <input type="text" name="numero" required className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-gargom-accent/50 focus:bg-white transition-all font-mono" placeholder="CERT-001" />
+                    <label className="text-sm font-medium text-slate-700 ml-1">Número de Factura *</label>
+                    <input type="text" name="numero" required defaultValue={nextCertNumber} className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-gargom-accent/50 focus:bg-white transition-all font-mono" placeholder="FACT-001" />
                   </div>
 
                   <div className="space-y-1">
@@ -1265,7 +1268,7 @@ export default function ObraDetailClient({
                       disabled={isCertPending}
                       className="bg-gargom-blue hover:bg-[#021033] text-white px-6 py-2.5 rounded-xl font-medium flex items-center justify-center gap-2 transition-all shadow-lg shadow-gargom-blue/20 hover:shadow-xl hover:-translate-y-0.5 disabled:opacity-70 disabled:pointer-events-none"
                     >
-                      {isCertPending ? <Loader2 size={20} className="animate-spin" /> : <span>Guardar Certificación</span>}
+                      {isCertPending ? <Loader2 size={20} className="animate-spin" /> : <span>Guardar Factura / Certificación</span>}
                     </button>
                   </div>
                 </form>

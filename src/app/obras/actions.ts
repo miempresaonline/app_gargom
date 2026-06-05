@@ -6,6 +6,7 @@ import { revalidatePath } from 'next/cache';
 export async function createProject(prevState: any, formData: FormData) {
   const cliente = formData.get('cliente') as string || 'General';
   const direccion = formData.get('direccion') as string;
+  const nombreReferencia = formData.get('nombreReferencia') as string || null;
   const presupuestoTotal = parseFloat(formData.get('presupuestoTotal') as string) || 0;
   const presupuestoAdicional = parseFloat(formData.get('presupuestoAdicional') as string) || 0;
   const porcentajeImpuesto = parseFloat(formData.get('porcentajeImpuesto') as string) || 10;
@@ -27,6 +28,7 @@ export async function createProject(prevState: any, formData: FormData) {
     clienteCorreo: formData.get('clienteCorreo') as string || null,
     clienteTelefono: formData.get('clienteTelefono') as string || null,
     direccion,
+    nombreReferencia,
     presupuestoTotal,
     presupuestoAdicional,
     porcentajeImpuesto,
@@ -41,7 +43,8 @@ export async function createProject(prevState: any, formData: FormData) {
       create: clientsData.map((c: any) => ({
         nombre: c.nombre,
         cif: c.cif || null,
-        direccion: c.direccion || null
+        direccion: c.direccion || null,
+        porcentajeFacturacion: parseFloat(c.porcentajeFacturacion) || 100
       }))
     }
   };
@@ -60,6 +63,7 @@ export async function updateProject(prevState: any, formData: FormData) {
   const id = parseInt(formData.get('id') as string);
   const cliente = formData.get('cliente') as string || 'General';
   const direccion = formData.get('direccion') as string;
+  const nombreReferencia = formData.get('nombreReferencia') as string || null;
   const presupuestoTotal = parseFloat(formData.get('presupuestoTotal') as string) || 0;
   const presupuestoAdicional = parseFloat(formData.get('presupuestoAdicional') as string) || 0;
   const porcentajeImpuesto = parseFloat(formData.get('porcentajeImpuesto') as string) || 10;
@@ -81,6 +85,7 @@ export async function updateProject(prevState: any, formData: FormData) {
     clienteCorreo: formData.get('clienteCorreo') as string || null,
     clienteTelefono: formData.get('clienteTelefono') as string || null,
     direccion,
+    nombreReferencia,
     presupuestoTotal,
     presupuestoAdicional,
     porcentajeImpuesto,
@@ -109,6 +114,7 @@ export async function updateProject(prevState: any, formData: FormData) {
           nombre: c.nombre,
           cif: c.cif || null,
           direccion: c.direccion || null,
+          porcentajeFacturacion: parseFloat(c.porcentajeFacturacion) || 100,
           projectId: id
         }))
       });

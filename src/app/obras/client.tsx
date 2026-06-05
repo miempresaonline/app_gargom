@@ -65,7 +65,7 @@ export default function ObrasClient({ initialObras }: { initialObras: any[] }) {
   };
 
   const addClient = () => {
-    setClients([...clients, { nombre: '', cif: '', direccion: '' }]);
+    setClients([...clients, { nombre: '', cif: '', direccion: '', porcentajeFacturacion: '100' }]);
   };
 
   const removeClient = (index: number) => {
@@ -211,9 +211,16 @@ export default function ObrasClient({ initialObras }: { initialObras: any[] }) {
                   </div>
                   <div className="pr-12">
                     <h3 className="font-bold text-xl text-gargom-blue line-clamp-2">{obra.direccion}</h3>
+                    {obra.nombreReferencia && (
+                      <div className="text-sm font-semibold text-gargom-accent mt-0.5">Ref: {obra.nombreReferencia}</div>
+                    )}
                     <div className="flex items-center gap-2 text-slate-500 text-sm mt-1">
                       <User size={14} />
-                      <span className="font-medium truncate">{obra.clients?.length > 0 ? obra.clients.map((c:any)=>c.nombre).join(', ') : obra.cliente}</span>
+                      <span className="font-medium truncate">
+                        {obra.clients?.length > 0 
+                          ? obra.clients.map((c: any) => `${c.nombre}${c.porcentajeFacturacion ? ` (${c.porcentajeFacturacion}%)` : ''}`).join(', ') 
+                          : obra.cliente}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -317,6 +324,16 @@ export default function ObrasClient({ initialObras }: { initialObras: any[] }) {
                           placeholder="Ej. Calle Principal 123, Madrid"
                         />
                       </div>
+                      <div className="space-y-1 md:col-span-2">
+                        <label className="text-sm font-medium text-slate-700 ml-1">Referencia (Cliente, población, etc.)</label>
+                        <input
+                          type="text"
+                          name="nombreReferencia"
+                          defaultValue={editingObra?.nombreReferencia}
+                          className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gargom-accent/50 transition-all"
+                          placeholder="Ej. Juan Pérez - Las Rozas"
+                        />
+                      </div>
                       <div className="space-y-1">
                         <label className="text-sm font-medium text-slate-700 ml-1">Presupuesto Inicial (€) *</label>
                         <input
@@ -370,7 +387,7 @@ export default function ObrasClient({ initialObras }: { initialObras: any[] }) {
                     )}
 
                     {clients.map((client, index) => (
-                      <div key={index} className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-white p-4 rounded-xl border border-blue-100 relative pr-10">
+                      <div key={index} className="grid grid-cols-1 md:grid-cols-4 gap-4 bg-white p-4 rounded-xl border border-blue-100 relative pr-10">
                         <div className="space-y-1">
                           <label className="text-xs font-medium text-slate-600 ml-1">Nombre *</label>
                           <input type="text" required value={client.nombre} onChange={e => updateClient(index, 'nombre', e.target.value)} className="w-full px-3 py-2 text-sm bg-white border border-slate-200 rounded-lg" placeholder="Nombre completo" />
@@ -381,7 +398,11 @@ export default function ObrasClient({ initialObras }: { initialObras: any[] }) {
                         </div>
                         <div className="space-y-1">
                           <label className="text-xs font-medium text-slate-600 ml-1">Dirección</label>
-                          <input type="text" value={client.direccion || ''} onChange={e => updateClient(index, 'direccion', e.target.value)} className="w-full px-3 py-2 text-sm bg-white border border-slate-200 rounded-lg" placeholder="Dirección de facturación" />
+                          <input type="text" value={client.direccion || ''} onChange={e => updateClient(index, 'direccion', e.target.value)} className="w-full px-3 py-2 text-sm bg-white border border-slate-200 rounded-lg" placeholder="Dirección" />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-xs font-medium text-slate-600 ml-1">Facturación (%) *</label>
+                          <input type="number" required min="0" max="100" value={client.porcentajeFacturacion ?? 100} onChange={e => updateClient(index, 'porcentajeFacturacion', e.target.value)} className="w-full px-3 py-2 text-sm bg-white border border-slate-200 rounded-lg font-bold text-blue-600" placeholder="100" />
                         </div>
                         <button type="button" onClick={() => removeClient(index)} className="absolute right-2 top-2 p-1.5 text-red-400 hover:bg-red-50 hover:text-red-600 rounded-lg">
                           <Trash2 size={16} />

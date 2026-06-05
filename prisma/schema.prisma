@@ -21,6 +21,7 @@ model Project {
   id               Int       @id @default(autoincrement())
   presupuestoTotal Float
   direccion        String
+  nombreReferencia String?
   arquitecto         String?
   arquitectoCorreo   String?
   arquitectoTelefono String?
@@ -47,10 +48,11 @@ model Project {
 }
 
 model ProjectClient {
-  id        Int      @id @default(autoincrement())
-  nombre    String
-  cif       String?
-  direccion String?
+  id                    Int      @id @default(autoincrement())
+  nombre                String
+  cif                   String?
+  direccion             String?
+  porcentajeFacturacion Float?   @default(100)
   
   projectId Int
   project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)

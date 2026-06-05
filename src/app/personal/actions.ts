@@ -2,6 +2,7 @@
 
 import { prisma } from '@/lib/db';
 import { revalidatePath } from 'next/cache';
+import { logAction } from '@/lib/logger';
 
 export async function createWorker(prevState: any, formData: FormData) {
   const nombre = formData.get('nombre') as string;
@@ -13,9 +14,10 @@ export async function createWorker(prevState: any, formData: FormData) {
   }
 
   try {
-    await prisma.worker.create({
+    const worker = await prisma.worker.create({
       data: { nombre, cargo, precioHora },
     });
+    await logAction('Crear Operario', `Se ha registrado el operario ${nombre} (${cargo}) con precio/hora de ${precioHora}€`);
     revalidatePath('/personal');
     return { success: true };
   } catch (error) {
@@ -25,10 +27,11 @@ export async function createWorker(prevState: any, formData: FormData) {
 
 export async function updateWorker(id: number, nombre: string, cargo: string, precioHora: number) {
   try {
-    await prisma.worker.update({
+    const worker = await prisma.worker.update({
       where: { id },
       data: { nombre, cargo, precioHora },
     });
+    await logAction('Modificar Operario', `Se ha modificado el operario con ID ${id} (${nombre} - ${cargo})`);
     revalidatePath('/personal');
     return { success: true };
   } catch (error) {
@@ -38,9 +41,13 @@ export async function updateWorker(id: number, nombre: string, cargo: string, pr
 
 export async function deleteWorker(id: number) {
   try {
+    const worker = await prisma.worker.findUnique({ where: { id } });
     await prisma.worker.delete({
       where: { id },
     });
+    if (worker) {
+      await logAction('Eliminar Operario', `Se ha eliminado el operario con ID ${id} (${worker.nombre})`);
+    }
     revalidatePath('/personal');
     return { success: true };
   } catch (error) {

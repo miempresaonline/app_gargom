@@ -3,6 +3,7 @@
 import { prisma } from '@/lib/db';
 import { revalidatePath } from 'next/cache';
 import { ExpenseType } from '@prisma/client';
+import { logAction } from '@/lib/logger';
 
 export async function createGastoObra(prevState: any, formData: FormData) {
   const tipo = formData.get('tipo') as ExpenseType;
@@ -94,6 +95,8 @@ export async function createGastoObra(prevState: any, formData: FormData) {
       }
     }
 
+    await logAction('Crear Gasto Obra', `Se ha registrado el gasto con ID ${expense.id} (${tipo} - ${expense.importe}€) en la obra con ID ${projectId}`);
+
     revalidatePath(`/obras/${projectId}`);
     revalidatePath('/gastos');
     return { success: true };
@@ -105,9 +108,13 @@ export async function createGastoObra(prevState: any, formData: FormData) {
 
 export async function deleteGastoObra(id: number, projectId: number) {
   try {
+    const expense = await prisma.expense.findUnique({ where: { id } });
     await prisma.expense.delete({
       where: { id },
     });
+    if (expense) {
+      await logAction('Eliminar Gasto Obra', `Se ha eliminado el gasto con ID ${id} (${expense.tipo} - ${expense.importe}€) en la obra con ID ${projectId}`);
+    }
     revalidatePath(`/obras/${projectId}`);
     revalidatePath('/gastos');
     return { success: true };
@@ -127,9 +134,10 @@ export async function createCertification(prevState: any, formData: FormData) {
   }
 
   try {
-    await prisma.certification.create({
+    const cert = await prisma.certification.create({
       data: { projectId, importe, numero, concepto },
     });
+    await logAction('Crear Certificación Obra', `Se ha creado la factura/certificación Nº ${numero} (${importe}€) en la obra con ID ${projectId}`);
     revalidatePath(`/obras/${projectId}`);
     revalidatePath('/certificaciones');
     return { success: true };
@@ -140,10 +148,11 @@ export async function createCertification(prevState: any, formData: FormData) {
 
 export async function syncCertificationOdoo(id: number, projectId: number) {
   try {
-    await prisma.certification.update({
+    const cert = await prisma.certification.update({
       where: { id },
       data: { enviadaOdoo: true }
     });
+    await logAction('Sincronizar Certificación Odoo', `Se ha enviado a Odoo la certificación Nº ${cert.numero} de la obra con ID ${projectId}`);
     revalidatePath(`/obras/${projectId}`);
     revalidatePath('/certificaciones');
     return { success: true };

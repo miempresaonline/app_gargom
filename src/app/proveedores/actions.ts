@@ -2,6 +2,7 @@
 
 import { prisma } from '@/lib/db';
 import { revalidatePath } from 'next/cache';
+import { logAction } from '@/lib/logger';
 
 export async function createSupplier(prevState: any, formData: FormData) {
   const nombre = formData.get('nombre') as string;
@@ -14,9 +15,10 @@ export async function createSupplier(prevState: any, formData: FormData) {
   }
 
   try {
-    await prisma.supplier.create({
+    const supplier = await prisma.supplier.create({
       data: { nombre, correo, cif, telefono },
     });
+    await logAction('Crear Proveedor', `Se ha registrado el proveedor ${nombre} (CIF: ${cif})`);
     revalidatePath('/proveedores');
     return { success: true };
   } catch (error) {
@@ -30,10 +32,11 @@ export async function updateSupplier(id: number, nombre: string, correo: string,
   }
   
   try {
-    await prisma.supplier.update({
+    const supplier = await prisma.supplier.update({
       where: { id },
       data: { nombre, correo, cif, telefono },
     });
+    await logAction('Modificar Proveedor', `Se ha modificado el proveedor con ID ${id} (${nombre})`);
     revalidatePath('/proveedores');
     return { success: true };
   } catch (error) {
@@ -43,9 +46,13 @@ export async function updateSupplier(id: number, nombre: string, correo: string,
 
 export async function deleteSupplier(id: number) {
   try {
+    const supplier = await prisma.supplier.findUnique({ where: { id } });
     await prisma.supplier.delete({
       where: { id },
     });
+    if (supplier) {
+      await logAction('Eliminar Proveedor', `Se ha eliminado el proveedor con ID ${id} (${supplier.nombre})`);
+    }
     revalidatePath('/proveedores');
     return { success: true };
   } catch (error) {

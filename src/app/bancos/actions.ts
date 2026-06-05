@@ -2,6 +2,7 @@
 
 import { prisma } from '@/lib/db';
 import { revalidatePath } from 'next/cache';
+import { logAction } from '@/lib/logger';
 
 export async function createBank(prevState: any, formData: FormData) {
   const nombre = formData.get('nombre') as string;
@@ -17,9 +18,10 @@ export async function createBank(prevState: any, formData: FormData) {
   }
 
   try {
-    await prisma.bank.create({
+    const bank = await prisma.bank.create({
       data: { nombre, numeroCuenta },
     });
+    await logAction('Crear Banco', `Se ha registrado la cuenta de pago ${nombre} (${numeroCuenta})`);
     revalidatePath('/bancos');
     return { success: true };
   } catch (error) {
@@ -38,10 +40,11 @@ export async function updateBank(id: number, nombre: string, numeroCuenta: strin
   }
 
   try {
-    await prisma.bank.update({
+    const bank = await prisma.bank.update({
       where: { id },
       data: { nombre, numeroCuenta },
     });
+    await logAction('Modificar Banco', `Se ha modificado la cuenta de pago con ID ${id} (${nombre})`);
     revalidatePath('/bancos');
     return { success: true };
   } catch (error) {
@@ -51,9 +54,13 @@ export async function updateBank(id: number, nombre: string, numeroCuenta: strin
 
 export async function deleteBank(id: number) {
   try {
+    const bank = await prisma.bank.findUnique({ where: { id } });
     await prisma.bank.delete({
       where: { id },
     });
+    if (bank) {
+      await logAction('Eliminar Banco', `Se ha eliminado la cuenta de pago con ID ${id} (${bank.nombre})`);
+    }
     revalidatePath('/bancos');
     return { success: true };
   } catch (error) {

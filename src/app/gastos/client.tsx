@@ -50,44 +50,39 @@ export default function GastosClient({
       if (mode === 'ia') {
         setUploadProgress('scanning');
         
-        const reader = new FileReader();
-        reader.onloadend = async () => {
-          const base64 = reader.result as string;
-          const aiRes = await parseInvoiceWithGroq(base64);
+        const aiRes = await parseInvoiceWithGroq(uploadData.url);
+        
+        if (aiRes.error) {
+          setError(aiRes.error);
+          setUploadProgress('error');
+        } else if (aiRes.success && aiRes.data) {
+          const data = aiRes.data;
           
-          if (aiRes.error) {
-            setError(aiRes.error);
-            setUploadProgress('error');
-          } else if (aiRes.success && aiRes.data) {
-            const data = aiRes.data;
-            
-            // Fill form via state editingGasto
-            setEditingGasto((prev: any) => {
-              // Find matching supplier
-              let matchedSupplierId = prev?.supplierId || '';
-              if (data.concepto) {
-                const matched = proveedores.find(p => 
-                  data.concepto.toLowerCase().includes(p.nombre.toLowerCase()) || 
-                  p.nombre.toLowerCase().includes(data.concepto.toLowerCase())
-                );
-                if (matched) matchedSupplierId = matched.id;
-              }
+          // Fill form via state editingGasto
+          setEditingGasto((prev: any) => {
+            // Find matching supplier
+            let matchedSupplierId = prev?.supplierId || '';
+            if (data.concepto) {
+              const matched = proveedores.find(p => 
+                data.concepto.toLowerCase().includes(p.nombre.toLowerCase()) || 
+                p.nombre.toLowerCase().includes(data.concepto.toLowerCase())
+              );
+              if (matched) matchedSupplierId = matched.id;
+            }
 
-              return {
-                ...prev,
-                concepto: data.concepto || prev?.concepto || '',
-                importe: data.importe || prev?.importe || '',
-                numero: data.numero || prev?.numero || '',
-                fecha: data.fecha ? new Date(data.fecha).toISOString() : prev?.fecha,
-                fechaVencimiento: data.fechaVencimiento ? new Date(data.fechaVencimiento).toISOString() : prev?.fechaVencimiento,
-                supplierId: matchedSupplierId
-              };
-            });
+            return {
+              ...prev,
+              concepto: data.concepto || prev?.concepto || '',
+              importe: data.importe || prev?.importe || '',
+              numero: data.numero || prev?.numero || '',
+              fecha: data.fecha ? new Date(data.fecha).toISOString() : prev?.fecha,
+              fechaVencimiento: data.fechaVencimiento ? new Date(data.fechaVencimiento).toISOString() : prev?.fechaVencimiento,
+              supplierId: matchedSupplierId
+            };
+          });
 
-            setUploadProgress('success');
-          }
-        };
-        reader.readAsDataURL(file);
+          setUploadProgress('success');
+        }
       } else {
         setUploadProgress('success');
       }

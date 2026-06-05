@@ -221,8 +221,20 @@ export async function deleteGasto(id: number) {
   }
 }
 
-export async function parseInvoiceWithGroq(base64Image: string) {
+export async function parseInvoiceWithGroq(base64ImageOrPath: string) {
   try {
+    let base64Image = base64ImageOrPath;
+    
+    if (base64ImageOrPath.startsWith('/imagenes/')) {
+      const fs = require('fs');
+      const path = require('path');
+      const filePath = path.join(process.cwd(), 'public', base64ImageOrPath);
+      const fileBuffer = fs.readFileSync(filePath);
+      const ext = path.extname(filePath).toLowerCase();
+      const mimeType = ext === '.png' ? 'image/png' : ext === '.gif' ? 'image/gif' : 'image/jpeg';
+      base64Image = `data:${mimeType};base64,${fileBuffer.toString('base64')}`;
+    }
+
     const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {

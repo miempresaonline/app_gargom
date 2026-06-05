@@ -3,16 +3,17 @@
 import { useState, useTransition } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, X, MapPin, User, Phone, Mail, HardHat, Pickaxe, Building, Loader2, Trash2, ArrowRight, Search, Edit2, Archive, ArchiveRestore } from 'lucide-react';
-import { createProject, updateProject, archiveProject, unarchiveProject } from './actions';
+import { createProject, updateProject, archiveProject, unarchiveProject, deleteProject } from './actions';
 import Link from 'next/link';
 
-export default function ObrasClient({ initialObras }: { initialObras: any[] }) {
+export default function ObrasClient({ initialObras, devMode = false }: { initialObras: any[], devMode?: boolean }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingObra, setEditingObra] = useState<any>(null);
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [isArchiving, setIsArchiving] = useState<number | null>(null);
   const [isUnarchiving, setIsUnarchiving] = useState<number | null>(null);
+  const [isDeleting, setIsDeleting] = useState<number | null>(null);
   const [showArchived, setShowArchived] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('recientes');
@@ -61,6 +62,17 @@ export default function ObrasClient({ initialObras }: { initialObras: any[] }) {
       setIsUnarchiving(id);
       await unarchiveProject(id);
       setIsUnarchiving(null);
+    }
+  };
+
+  const handleDelete = async (id: number) => {
+    if (confirm('¿Seguro que deseas eliminar definitivamente esta obra? Esta acción es irreversible y eliminará todos los gastos y certificaciones vinculados.')) {
+      setIsDeleting(id);
+      const res = await deleteProject(id);
+      setIsDeleting(null);
+      if (res?.error) {
+        alert(res.error);
+      }
     }
   };
 
@@ -197,9 +209,16 @@ export default function ObrasClient({ initialObras }: { initialObras: any[] }) {
                     </button>
                   </>
                 ) : (
-                  <button onClick={() => handleUnarchive(obra.id)} disabled={isUnarchiving === obra.id} className="p-2 bg-emerald-50 text-emerald-600 rounded-lg hover:bg-emerald-100 transition" title="Desarchivar Obra">
-                    {isUnarchiving === obra.id ? <Loader2 size={16} className="animate-spin" /> : <ArchiveRestore size={16} />}
-                  </button>
+                  <div className="flex gap-2">
+                    <button onClick={() => handleUnarchive(obra.id)} disabled={isUnarchiving === obra.id} className="p-2 bg-emerald-50 text-emerald-600 rounded-lg hover:bg-emerald-100 transition" title="Desarchivar Obra">
+                      {isUnarchiving === obra.id ? <Loader2 size={16} className="animate-spin" /> : <ArchiveRestore size={16} />}
+                    </button>
+                    {devMode && (
+                      <button onClick={() => handleDelete(obra.id)} disabled={isDeleting === obra.id} className="p-2 bg-rose-50 text-rose-600 rounded-lg hover:bg-rose-100 transition" title="Eliminar Obra Definitivamente">
+                        {isDeleting === obra.id ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
+                      </button>
+                    )}
+                  </div>
                 )}
               </div>
 

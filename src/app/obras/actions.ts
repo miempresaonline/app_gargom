@@ -2,6 +2,8 @@
 
 import { prisma } from '@/lib/db';
 import { revalidatePath } from 'next/cache';
+import { cookies } from 'next/headers';
+import { logAction } from '@/lib/logger';
 
 export async function createProject(prevState: any, formData: FormData) {
   const cliente = formData.get('cliente') as string || 'General';
@@ -50,7 +52,8 @@ export async function createProject(prevState: any, formData: FormData) {
   };
 
   try {
-    await prisma.project.create({ data });
+    const project = await prisma.project.create({ data });
+    await logAction('Crear Obra', `Se ha creado la obra en ${project.direccion} para el cliente ${project.cliente}`);
     revalidatePath('/obras');
     return { success: true };
   } catch (error) {
@@ -99,7 +102,7 @@ export async function updateProject(prevState: any, formData: FormData) {
   };
 
   try {
-    await prisma.project.update({
+    const project = await prisma.project.update({
       where: { id },
       data,
     });
@@ -120,6 +123,8 @@ export async function updateProject(prevState: any, formData: FormData) {
       });
     }
 
+    await logAction('Modificar Obra', `Se ha modificado la obra con ID ${id} (${project.direccion})`);
+
     revalidatePath('/obras');
     revalidatePath(`/obras/${id}`);
     return { success: true };
@@ -131,10 +136,11 @@ export async function updateProject(prevState: any, formData: FormData) {
 
 export async function archiveProject(id: number) {
   try {
-    await prisma.project.update({
+    const project = await prisma.project.update({
       where: { id },
       data: { estado: 'ARCHIVADA' }
     });
+    await logAction('Archivar Obra', `Se ha archivado la obra con ID ${id} (${project.direccion})`);
     revalidatePath('/obras');
     return { success: true };
   } catch (error) {
@@ -145,14 +151,45 @@ export async function archiveProject(id: number) {
 
 export async function unarchiveProject(id: number) {
   try {
-    await prisma.project.update({
+    const project = await prisma.project.update({
       where: { id },
       data: { estado: 'ACTIVA' }
     });
+    await logAction('Desarchivar Obra', `Se ha desarchivado la obra con ID ${id} (${project.direccion})`);
     revalidatePath('/obras');
     return { success: true };
   } catch (error) {
     console.error(error);
     return { error: 'Error al desarchivar la obra' };
+  }
+}
+
+export async function deleteProject(id: number) {
+  try {
+    const cookieStore = await cookies();
+    const devMode = cookieStore.get('gargom_dev_mode')?.value === 'true';
+    if (!devMode) {
+      return { error: 'Acción permitida únicamente en Modo Desarrollador' };
+    }
+
+    const project = await prisma.project.findUnique({
+      where: { id }
+    });
+
+    if (!project) {
+      return { error: 'La obra no existe' };
+    }
+
+    await prisma.project.delete({
+      where: { id }
+    });
+
+    await logAction('Eliminar Obra', `Se ha eliminado permanentemente la obra con ID ${id} (${project.direccion})`);
+
+    revalidatePath('/obras');
+    return { success: true };
+  } catch (error) {
+    console.error(error);
+    return { error: 'Error al eliminar la obra' };
   }
 }

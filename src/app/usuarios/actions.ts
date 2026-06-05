@@ -3,6 +3,7 @@
 import { prisma } from '@/lib/db';
 import bcrypt from 'bcryptjs';
 import { revalidatePath } from 'next/cache';
+import { logAction } from '@/lib/logger';
 
 export async function createUser(prevState: any, formData: FormData) {
   const nombre = formData.get('nombre') as string;
@@ -25,13 +26,15 @@ export async function createUser(prevState: any, formData: FormData) {
 
     const hashedPassword = await bcrypt.hash(password, 10);
     
-    await prisma.user.create({
+    const user = await prisma.user.create({
       data: {
         nombre,
         email,
         password: hashedPassword,
       },
     });
+
+    await logAction('Crear Usuario', `Se ha registrado el usuario ${nombre} (${email})`);
 
     revalidatePath('/usuarios');
     return { success: true };
@@ -43,10 +46,11 @@ export async function createUser(prevState: any, formData: FormData) {
 
 export async function updateUser(id: number, nombre: string) {
   try {
-    await prisma.user.update({
+    const user = await prisma.user.update({
       where: { id },
       data: { nombre },
     });
+    await logAction('Modificar Usuario', `Se ha modificado el usuario con ID ${id} (${nombre})`);
     revalidatePath('/usuarios');
     return { success: true };
   } catch (error) {
@@ -57,9 +61,13 @@ export async function updateUser(id: number, nombre: string) {
 
 export async function deleteUser(id: number) {
   try {
+    const user = await prisma.user.findUnique({ where: { id } });
     await prisma.user.delete({
       where: { id },
     });
+    if (user) {
+      await logAction('Eliminar Usuario', `Se ha eliminado el usuario con ID ${id} (${user.nombre} - ${user.email})`);
+    }
     revalidatePath('/usuarios');
     return { success: true };
   } catch (error) {

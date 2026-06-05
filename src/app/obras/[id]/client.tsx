@@ -159,35 +159,30 @@ export default function ObraDetailClient({
       if (mode === 'ia') {
         setUploadProgress('scanning');
         
-        const reader = new FileReader();
-        reader.onloadend = async () => {
-          const base64 = reader.result as string;
-          const aiRes = await parseInvoiceWithGroq(base64);
+        const aiRes = await parseInvoiceWithGroq(uploadData.url);
+        
+        if (aiRes.error) {
+          alert(aiRes.error);
+          setUploadProgress('error');
+        } else if (aiRes.success && aiRes.data) {
+          const data = aiRes.data;
+          if (data.concepto) setConcepto(data.concepto);
+          if (data.importe) setImporte(data.importe.toString());
+          if (data.numero) setNumero(data.numero);
+          if (data.fecha) setFecha(data.fecha);
+          if (data.fechaVencimiento) setFechaVencimiento(data.fechaVencimiento);
           
-          if (aiRes.error) {
-            alert(aiRes.error);
-            setUploadProgress('error');
-          } else if (aiRes.success && aiRes.data) {
-            const data = aiRes.data;
-            if (data.concepto) setConcepto(data.concepto);
-            if (data.importe) setImporte(data.importe.toString());
-            if (data.numero) setNumero(data.numero);
-            if (data.fecha) setFecha(data.fecha);
-            if (data.fechaVencimiento) setFechaVencimiento(data.fechaVencimiento);
-            
-            // Auto match supplier if found in concept
-            if (data.concepto) {
-              const matched = proveedores.find(p => 
-                data.concepto.toLowerCase().includes(p.nombre.toLowerCase()) || 
-                p.nombre.toLowerCase().includes(data.concepto.toLowerCase())
-              );
-              if (matched) setSupplierId(matched.id.toString());
-            }
-
-            setUploadProgress('success');
+          // Auto match supplier if found in concept
+          if (data.concepto) {
+            const matched = proveedores.find(p => 
+              data.concepto.toLowerCase().includes(p.nombre.toLowerCase()) || 
+              p.nombre.toLowerCase().includes(data.concepto.toLowerCase())
+            );
+            if (matched) setSupplierId(matched.id.toString());
           }
-        };
-        reader.readAsDataURL(file);
+
+          setUploadProgress('success');
+        }
       } else {
         setUploadProgress('success');
       }

@@ -3,6 +3,7 @@
 import { prisma } from '@/lib/db';
 import { revalidatePath } from 'next/cache';
 import { logAction } from '@/lib/logger';
+import { syncInvoiceToOdoo } from '@/lib/odoo';
 
 export async function createCertification(prevState: any, formData: FormData) {
   const projectId = parseInt(formData.get('projectId') as string);
@@ -68,17 +69,15 @@ export async function deleteCertification(id: number) {
 
 export async function sendToOdoo(id: number) {
   try {
-    // Simular el envío a Odoo
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    const cert = await prisma.certification.update({
-      where: { id },
-      data: { enviadaOdoo: true }
-    });
-    await logAction('Enviar Odoo', `Se ha enviado a Odoo manualmente la certificación Nº ${cert.numero}`);
+    const res = await syncInvoiceToOdoo(id);
+    if (!res.success) {
+      return { error: res.error || 'Error al conectar con Odoo' };
+    }
+    const cert = await prisma.certification.findUnique({ where: { id } });
+    await logAction('Enviar Odoo', `Se ha enviado a Odoo manualmente la certificación Nº ${cert?.numero || id}`);
     revalidatePath('/certificaciones');
     return { success: true };
-  } catch (error) {
-    return { error: 'Error al conectar con Odoo' };
+  } catch (error: any) {
+    return { error: error.message || 'Error al conectar con Odoo' };
   }
 }

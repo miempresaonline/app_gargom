@@ -4,6 +4,7 @@ import { prisma } from '@/lib/db';
 import { revalidatePath } from 'next/cache';
 import { ExpenseType } from '@prisma/client';
 import { logAction } from '@/lib/logger';
+import { syncInvoiceToOdoo } from '@/lib/odoo';
 
 export async function createGastoObra(prevState: any, formData: FormData) {
   const tipo = formData.get('tipo') as ExpenseType;
@@ -148,16 +149,17 @@ export async function createCertification(prevState: any, formData: FormData) {
 
 export async function syncCertificationOdoo(id: number, projectId: number) {
   try {
-    const cert = await prisma.certification.update({
-      where: { id },
-      data: { enviadaOdoo: true }
-    });
-    await logAction('Sincronizar Certificación Odoo', `Se ha enviado a Odoo la certificación Nº ${cert.numero} de la obra con ID ${projectId}`);
+    const res = await syncInvoiceToOdoo(id);
+    if (!res.success) {
+      return { error: res.error || 'Error al sincronizar con Odoo' };
+    }
+    const cert = await prisma.certification.findUnique({ where: { id } });
+    await logAction('Sincronizar Certificación Odoo', `Se ha enviado a Odoo la certificación Nº ${cert?.numero || id} de la obra con ID ${projectId}`);
     revalidatePath(`/obras/${projectId}`);
     revalidatePath('/certificaciones');
     return { success: true };
-  } catch (error) {
+  } catch (error: any) {
     console.error(error);
-    return { error: 'Error al sincronizar con Odoo' };
+    return { error: error.message || 'Error al sincronizar con Odoo' };
   }
 }

@@ -115,6 +115,7 @@ model Expense {
   observaciones    String?     @db.Text
   
   estadoPago       String      @default("Pendiente")
+  formaPago        String?
   esGastoB         Boolean     @default(false)
   imagenUrl        String?
   

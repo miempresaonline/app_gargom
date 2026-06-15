@@ -340,7 +340,7 @@ export default function GastosClient({
           >
             <option value="ALL">Todas las obras</option>
             {obras.map(o => (
-              <option key={o.id} value={o.id.toString()}>{o.cliente} - {o.direccion}</option>
+              <option key={o.id} value={o.id.toString()}>{o.cliente} - {o.nombreReferencia || o.direccion}</option>
             ))}
           </select>
         </div>
@@ -382,9 +382,14 @@ export default function GastosClient({
                           {gasto.tipo}
                         </span>
                         {getPaymentBadge(gasto.estadoPago)}
+                        {gasto.formaPago && (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200">
+                            {gasto.formaPago}
+                          </span>
+                        )}
                         {gasto.esGastoB && (
                           <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-amber-500/10 text-amber-700 border border-amber-500/20 shadow-sm animate-pulse">
-                            Gasto B
+                            Gasto Interno
                           </span>
                         )}
                       </div>
@@ -500,7 +505,7 @@ export default function GastosClient({
                         <span>{gasto.concepto || (gasto.tipo === 'PERSONAL' ? `Horas: ${gasto.worker?.nombre}` : `Factura ${gasto.numero}`)}</span>
                         {gasto.esGastoB && (
                           <span className="inline-flex items-center px-1.5 py-0.2 rounded text-[9px] font-bold bg-amber-500/10 text-amber-700 border border-amber-500/20">
-                            B
+                            Interno
                           </span>
                         )}
                       </div>
@@ -510,6 +515,7 @@ export default function GastosClient({
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       {getPaymentBadge(gasto.estadoPago)}
+                      {gasto.formaPago && <span className="text-xs text-slate-400 block mt-1">{gasto.formaPago}</span>}
                     </td>
                     <td className="px-6 py-4 text-right font-bold text-gargom-blue whitespace-nowrap">
                       {new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(gasto.importe || 0)}
@@ -616,7 +622,7 @@ export default function GastosClient({
                       >
                         <option value="">Selecciona una obra...</option>
                         {obras.map(o => (
-                          <option key={o.id} value={o.id}>{o.cliente} - {o.direccion}</option>
+                          <option key={o.id} value={o.id}>{o.cliente} - {o.nombreReferencia || o.direccion}</option>
                         ))}
                       </select>
                     </div>
@@ -640,12 +646,12 @@ export default function GastosClient({
                           <span className="text-xs text-slate-500 mt-1 max-w-xs">Sube la foto para procesar, guardar en la obra y autocompletar importes, fechas e información de forma real</span>
                           <input 
                             type="file" 
-                            accept="image/*"
+                            accept="image/*,application/pdf,.pdf"
                             onChange={(e) => handleFileUpload(e, 'ia')}
                             className="absolute inset-0 opacity-0 cursor-pointer"
                           />
                         </div>
-
+ 
                         {/* Option 2: Manual Upload */}
                         <div className="border border-slate-200 rounded-2xl p-4 bg-slate-50/50 hover:bg-slate-50 transition-all flex flex-col justify-between items-center text-center relative overflow-hidden group">
                           <div className="w-10 h-10 rounded-full bg-slate-200 text-slate-600 flex items-center justify-center mb-2">
@@ -655,7 +661,7 @@ export default function GastosClient({
                           <span className="text-xs text-slate-500 mt-1 max-w-xs">Adjunta la foto o captura de la factura física para que se guarde de forma permanente en la obra sin analizar</span>
                           <input 
                             type="file" 
-                            accept="image/*"
+                            accept="image/*,application/pdf,.pdf"
                             onChange={(e) => handleFileUpload(e, 'manual')}
                             className="absolute inset-0 opacity-0 cursor-pointer"
                           />
@@ -754,10 +760,18 @@ export default function GastosClient({
                             <option value="Pagado">Pagado</option>
                           </select>
                         </div>
+                        <div className="space-y-1">
+                          <label className="text-sm font-medium text-slate-700 ml-1">Forma de Pago</label>
+                          <select name="formaPago" defaultValue={editingGasto?.formaPago || ''} className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl">
+                            <option value="">No especificado</option>
+                            <option value="Transferencia">Transferencia</option>
+                            <option value="Recibo">Recibo</option>
+                          </select>
+                        </div>
                         <div className="space-y-1 flex items-center h-full pt-6">
                           <label className="flex items-center gap-2 cursor-pointer">
                             <input type="checkbox" name="esGastoB" defaultChecked={editingGasto?.esGastoB} className="w-5 h-5 rounded border-slate-300 text-gargom-accent focus:ring-gargom-accent" />
-                            <span className="text-sm font-medium text-slate-700">Marcar como Gasto "B"</span>
+                            <span className="text-sm font-medium text-slate-700">Registrar como Gasto Interno</span>
                           </label>
                         </div>
                       </div>
@@ -803,6 +817,14 @@ export default function GastosClient({
                           </select>
                         </div>
                         <div className="space-y-1">
+                          <label className="text-sm font-medium text-slate-700 ml-1">Forma de Pago</label>
+                          <select name="formaPago" defaultValue={editingGasto?.formaPago || ''} className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl">
+                            <option value="">No especificado</option>
+                            <option value="Transferencia">Transferencia</option>
+                            <option value="Recibo">Recibo</option>
+                          </select>
+                        </div>
+                        <div className="space-y-1">
                           <label className="text-sm font-medium text-slate-700 ml-1">Cuenta de Pago</label>
                           <select name="bankId" defaultValue={editingGasto?.bankId} className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl">
                             <option value="">Selecciona una cuenta de pago...</option>
@@ -814,7 +836,7 @@ export default function GastosClient({
                         <div className="space-y-1 md:col-span-2 flex items-center h-full pt-2">
                           <label className="flex items-center gap-2 cursor-pointer">
                             <input type="checkbox" name="esGastoB" defaultChecked={editingGasto?.esGastoB} className="w-5 h-5 rounded border-slate-300 text-gargom-accent focus:ring-gargom-accent" />
-                            <span className="text-sm font-medium text-slate-700">Marcar como Gasto "B"</span>
+                            <span className="text-sm font-medium text-slate-700">Registrar como Gasto Interno</span>
                           </label>
                         </div>
                       </div>

@@ -26,6 +26,7 @@ export async function createGastoObra(prevState: any, formData: FormData) {
   
   // New Fields
   const estadoPago = (formData.get('estadoPago') as string) || 'Pendiente';
+  const formaPago = (formData.get('formaPago') as string) || null;
   const esGastoB = formData.get('esGastoB') === 'true';
   const imagenUrl = (formData.get('imagenUrl') as string) || null;
   const supplierId = formData.get('supplierId') ? parseInt(formData.get('supplierId') as string) : null;
@@ -45,6 +46,7 @@ export async function createGastoObra(prevState: any, formData: FormData) {
         horas,
         observaciones,
         estadoPago,
+        formaPago,
         esGastoB,
         imagenUrl,
         supplierId

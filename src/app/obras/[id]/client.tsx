@@ -40,6 +40,7 @@ export default function ObraDetailClient({
   const [fecha, setFecha] = useState(new Date().toISOString().split('T')[0]);
   const [fechaVencimiento, setFechaVencimiento] = useState('');
   const [estadoPago, setEstadoPago] = useState('Pendiente');
+  const [formaPago, setFormaPago] = useState('');
   const [esGastoB, setEsGastoB] = useState(false);
   const [supplierId, setSupplierId] = useState('');
   const [bankId, setBankId] = useState('');
@@ -114,6 +115,7 @@ export default function ObraDetailClient({
     setSupplierId(gasto.supplierId ? gasto.supplierId.toString() : '');
     setBankId(gasto.bankId ? gasto.bankId.toString() : '');
     setEstadoPago('Pendiente');
+    setFormaPago(gasto.formaPago || '');
     setEsGastoB(gasto.esGastoB || false);
     setIsModalOpen(true);
   };
@@ -126,6 +128,7 @@ export default function ObraDetailClient({
     setFecha(new Date().toISOString().split('T')[0]);
     setFechaVencimiento('');
     setEstadoPago('Pendiente');
+    setFormaPago('');
     setEsGastoB(false);
     setSupplierId('');
     setBankId('');
@@ -543,7 +546,6 @@ export default function ObraDetailClient({
                             }`}>
                               {gasto.tipo}
                             </span>
-
                             {/* Payment State badge */}
                             <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider border ${
                               gasto.estadoPago === 'Pagado' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' :
@@ -552,11 +554,17 @@ export default function ObraDetailClient({
                             }`}>
                               {gasto.estadoPago || 'Pendiente'}
                             </span>
-
-                            {/* Gasto B badge */}
+ 
+                            {gasto.formaPago && (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold bg-slate-100 text-slate-700 border border-slate-200 uppercase tracking-wider">
+                                {gasto.formaPago}
+                              </span>
+                            )}
+ 
+                            {/* Gasto Interno badge */}
                             {gasto.esGastoB && (
                               <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold bg-amber-500/20 text-amber-700 border border-amber-300">
-                                Gasto B
+                                Gasto Interno
                               </span>
                             )}
                           </div>
@@ -612,11 +620,9 @@ export default function ObraDetailClient({
                           <Eye size={14} />
                         </a>
                       )}
-                      {gasto.tipo === 'PERSONAL' && (
-                        <button onClick={() => handleClone(gasto)} className="p-1.5 bg-slate-50 text-slate-500 rounded-lg hover:bg-slate-100 transition shadow-sm border border-slate-200" title="Clonar Gasto">
-                          <Copy size={14} />
-                        </button>
-                      )}
+                      <button onClick={() => handleClone(gasto)} className="p-1.5 bg-slate-50 text-slate-500 rounded-lg hover:bg-slate-100 transition shadow-sm border border-slate-200" title="Clonar Gasto">
+                        <Copy size={14} />
+                      </button>
                       <button onClick={() => handleDelete(gasto.id)} disabled={isDeleting === gasto.id} className="p-1.5 bg-red-50 text-red-500 rounded-lg hover:bg-red-100 transition shadow-sm border border-red-100" title="Eliminar Gasto">
                         {isDeleting === gasto.id ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
                       </button>
@@ -834,8 +840,7 @@ export default function ObraDetailClient({
                 <form action={formAction} className="space-y-6">
                   <input type="hidden" name="projectId" value={obra.id} />
                   <input type="hidden" name="imagenUrl" value={uploadedUrl || ''} />
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="space-y-1">
                       <label className="text-sm font-medium text-slate-700 ml-1">Tipo de Gasto *</label>
                       <select 
@@ -851,7 +856,7 @@ export default function ObraDetailClient({
                         <option value="PERSONAL">Personal</option>
                       </select>
                     </div>
-
+ 
                     <div className="space-y-1">
                       <label className="text-sm font-medium text-slate-700 ml-1">Estado de Pago</label>
                       <select
@@ -865,6 +870,22 @@ export default function ObraDetailClient({
                         <option value="Pagado">Pagado</option>
                       </select>
                     </div>
+ 
+                    <div className="space-y-1">
+                      <label className="text-sm font-medium text-slate-700 ml-1">Forma de Pago</label>
+                      <select
+                        name="formaPago"
+                        value={formaPago}
+                        onChange={e => setFormaPago(e.target.value)}
+                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gargom-accent/50 transition-all font-medium text-slate-700"
+                      >
+                        <option value="">No especificado</option>
+                        <option value="Transferencia">Transferencia</option>
+                        <option value="Recibo">Recibo</option>
+                        <option value="Efectivo">Efectivo</option>
+                        <option value="Tarjeta">Tarjeta</option>
+                      </select>
+                    </div>
                   </div>
 
                   {/* Physical invoice upload options (Only show for non-personal) */}
@@ -872,7 +893,7 @@ export default function ObraDetailClient({
                     <div className="space-y-3">
                       <label className="text-sm font-medium text-slate-700 ml-1 flex items-center gap-1.5">
                         <Upload size={16} className="text-slate-400" />
-                        Imagen / Factura Física (Carga y Escaneo)
+                        Imagen / Factura (Carga y Escaneo)
                       </label>
                       
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -882,10 +903,10 @@ export default function ObraDetailClient({
                             <Sparkles size={20} />
                           </div>
                           <span className="font-bold text-sm text-slate-800">Escanear factura con IA</span>
-                          <span className="text-xs text-slate-500 mt-1 max-w-xs">Sube la foto para procesar, guardar en la obra y autocompletar importes, fechas e información de forma real</span>
+                          <span className="text-xs text-slate-500 mt-1 max-w-xs">Sube la foto o PDF para procesar, guardar y autocompletar importes, fechas e información de forma real</span>
                           <input 
                             type="file" 
-                            accept="image/*"
+                            accept="image/*,application/pdf,.pdf"
                             onChange={(e) => handleFileUpload(e, 'ia')}
                             className="absolute inset-0 opacity-0 cursor-pointer"
                           />
@@ -897,10 +918,10 @@ export default function ObraDetailClient({
                             <Upload size={20} />
                           </div>
                           <span className="font-bold text-sm text-slate-800">Subida Manual Directa</span>
-                          <span className="text-xs text-slate-500 mt-1 max-w-xs">Adjunta la foto o captura de la factura física para que se guarde de forma permanente en la obra sin analizar</span>
+                          <span className="text-xs text-slate-500 mt-1 max-w-xs">Adjunta la foto o PDF de la factura física para que se guarde de forma permanente en la obra sin analizar</span>
                           <input 
                             type="file" 
-                            accept="image/*"
+                            accept="image/*,application/pdf,.pdf"
                             onChange={(e) => handleFileUpload(e, 'manual')}
                             className="absolute inset-0 opacity-0 cursor-pointer"
                           />
@@ -936,7 +957,7 @@ export default function ObraDetailClient({
                           {uploadProgress === 'success' && (
                             <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-3 flex items-center gap-2 text-emerald-700 text-sm">
                               <CheckCircle2 size={16} className="text-emerald-500" />
-                              <span className="font-semibold">✓ Imagen cargada y asociada correctamente! URL: {uploadedUrl}</span>
+                              <span className="font-semibold">✓ Imagen cargada y asociada correctamente!</span>
                             </div>
                           )}
 
@@ -1157,10 +1178,10 @@ export default function ObraDetailClient({
                       </div>
                     )}
 
-                    {/* Es Gasto B Switch */}
+                    {/* Es Gasto Interno Switch */}
                     <div className="border-t border-slate-200 pt-4 flex items-center justify-between">
                       <div className="flex flex-col">
-                        <span className="text-sm font-bold text-slate-800">¿Es Gasto B?</span>
+                        <span className="text-sm font-bold text-slate-800">¿Es Gasto Interno?</span>
                         <span className="text-xs text-slate-400">Activa esta opción para registrarlo internamente</span>
                       </div>
                       <input 

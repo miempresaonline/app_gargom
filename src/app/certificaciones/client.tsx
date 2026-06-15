@@ -21,6 +21,7 @@ export default function CertificacionesClient({
   const filteredCertificaciones = initialCertificaciones.filter(cert => 
     (cert.concepto?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
     (cert.project?.direccion?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+    (cert.project?.nombreReferencia?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
     (cert.numero?.toLowerCase() || '').includes(searchTerm.toLowerCase())
   );
 
@@ -145,7 +146,7 @@ export default function CertificacionesClient({
               <div className="space-y-4 flex-1">
                 <div className="bg-slate-50 rounded-lg p-3 border border-slate-100 flex items-start gap-2">
                   <Building size={16} className="text-slate-400 mt-0.5 shrink-0" />
-                  <span className="text-sm text-slate-700 font-medium">{cert.project?.direccion || 'Obra Eliminada'}</span>
+                  <span className="text-sm text-slate-700 font-medium">{cert.project?.nombreReferencia || cert.project?.direccion || 'Obra Eliminada'}</span>
                 </div>
 
                 <div className="flex justify-between items-end">
@@ -202,7 +203,7 @@ export default function CertificacionesClient({
                           <div style="display: flex; gap: 40px; margin-bottom: 40px;">
                             <div style="flex: 1; background: #f8fafc; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0;">
                               <h3 style="margin: 0 0 10px 0; color: #94a3b8; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Datos del Proyecto</h3>
-                              <p style="margin: 0 0 5px 0; color: #0f172a; font-weight: 600; font-size: 16px;">${cert.project?.direccion || 'Obra Eliminada'}</p>
+                              <p style="margin: 0 0 5px 0; color: #0f172a; font-weight: 600; font-size: 16px;">${cert.project?.nombreReferencia || cert.project?.direccion || 'Obra Eliminada'}</p>
                               <p style="margin: 0; color: #64748b; font-size: 14px;">Cliente: ${cert.project?.cliente || '-'}</p>
                             </div>
                           </div>
@@ -352,7 +353,7 @@ export default function CertificacionesClient({
                     >
                       <option value="">Selecciona una obra...</option>
                       {obras.map(o => (
-                        <option key={o.id} value={o.id}>{o.direccion}</option>
+                        <option key={o.id} value={o.id}>{o.nombreReferencia || o.direccion}</option>
                       ))}
                     </select>
                   </div>

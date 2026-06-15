@@ -25,6 +25,7 @@ export async function createGasto(prevState: any, formData: FormData) {
 
   const supplierId = formData.get('supplierId') ? parseInt(formData.get('supplierId') as string) : null;
   const estadoPago = formData.get('estadoPago') as string || 'Pendiente';
+  const formaPago = formData.get('formaPago') as string || null;
   const esGastoB = formData.get('esGastoB') === 'on' || formData.get('esGastoB') === 'true';
   const imagenUrl = formData.get('imagenUrl') as string || null;
 
@@ -44,6 +45,7 @@ export async function createGasto(prevState: any, formData: FormData) {
         observaciones,
         supplierId,
         estadoPago,
+        formaPago,
         esGastoB,
         imagenUrl
       },
@@ -124,6 +126,7 @@ export async function updateGasto(prevState: any, formData: FormData) {
   
   const supplierId = formData.get('supplierId') ? parseInt(formData.get('supplierId') as string) : null;
   const estadoPago = formData.get('estadoPago') as string || 'Pendiente';
+  const formaPago = formData.get('formaPago') as string || null;
   const esGastoB = formData.get('esGastoB') === 'on' || formData.get('esGastoB') === 'true';
   const imagenUrl = formData.get('imagenUrl') as string || null;
 
@@ -144,6 +147,7 @@ export async function updateGasto(prevState: any, formData: FormData) {
         observaciones,
         supplierId,
         estadoPago,
+        formaPago,
         esGastoB,
         imagenUrl
       },
@@ -224,6 +228,8 @@ export async function deleteGasto(id: number) {
 export async function parseInvoiceWithGroq(base64ImageOrPath: string) {
   try {
     let base64Image = base64ImageOrPath;
+    let isPdf = false;
+    let pdfText = '';
     
     if (base64ImageOrPath.startsWith('/imagenes/')) {
       const fs = require('fs');
@@ -231,19 +237,35 @@ export async function parseInvoiceWithGroq(base64ImageOrPath: string) {
       const filePath = path.join(process.cwd(), 'public', base64ImageOrPath);
       const fileBuffer = fs.readFileSync(filePath);
       const ext = path.extname(filePath).toLowerCase();
-      const mimeType = ext === '.png' ? 'image/png' : ext === '.gif' ? 'image/gif' : 'image/jpeg';
-      base64Image = `data:${mimeType};base64,${fileBuffer.toString('base64')}`;
+      
+      if (ext === '.pdf') {
+        isPdf = true;
+        const pdf = require('pdf-parse');
+        const pdfData = await pdf(fileBuffer);
+        pdfText = pdfData.text || '';
+      } else {
+        const mimeType = ext === '.png' ? 'image/png' : ext === '.gif' ? 'image/gif' : 'image/jpeg';
+        base64Image = `data:${mimeType};base64,${fileBuffer.toString('base64')}`;
+      }
+    } else if (base64ImageOrPath.toLowerCase().endsWith('.pdf') || base64ImageOrPath.startsWith('data:application/pdf')) {
+      isPdf = true;
+      if (base64ImageOrPath.startsWith('data:application/pdf;base64,')) {
+        const base64Data = base64ImageOrPath.split(';base64,').pop() || '';
+        const fileBuffer = Buffer.from(base64Data, 'base64');
+        const pdf = require('pdf-parse');
+        const pdfData = await pdf(fileBuffer);
+        pdfText = pdfData.text || '';
+      }
     }
 
-    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        model: "meta-llama/llama-4-scout-17b-16e-instruct",
-        messages: [
+    const messages = isPdf
+      ? [
+          {
+            role: "user",
+            content: "Extract information from this invoice text. Return ONLY a valid JSON object without markdown formatting, code blocks or explanations. Required keys: 'concepto' (string: main supplier name or brief description), 'numero' (string: invoice number), 'importe' (number: total amount), 'fecha' (string: YYYY-MM-DD), 'fechaVencimiento' (string: YYYY-MM-DD). If a field is not found or cannot be extracted, use null.\n\nInvoice Text:\n" + pdfText
+          }
+        ]
+      : [
           {
             role: "user",
             content: [
@@ -259,7 +281,17 @@ export async function parseInvoiceWithGroq(base64ImageOrPath: string) {
               }
             ]
           }
-        ],
+        ];
+
+    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: "meta-llama/llama-4-scout-17b-16e-instruct",
+        messages,
         temperature: 0.1
       })
     });

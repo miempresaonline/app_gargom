@@ -18,6 +18,12 @@ export default function ObraDetailClient({
   const [selectedType, setSelectedType] = useState<string>('GENERAL');
   const [state, formAction, isPending] = useActionState(createGastoObra, null);
   const [isDeleting, setIsDeleting] = useState<number | null>(null);
+  const [expandedGastoIds, setExpandedGastoIds] = useState<number[]>([]);
+  const toggleGastoExpand = (id: number) => {
+    setExpandedGastoIds(prev => 
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+    );
+  };
 
   const [isCertModalOpen, setIsCertModalOpen] = useState(false);
   const [certState, certFormAction, isCertPending] = useActionState(createCertification, null);
@@ -634,6 +640,45 @@ export default function ObraDetailClient({
                           </div>
                         )}
                       </div>
+
+                      {/* Toggle Details Button */}
+                      <button 
+                        type="button"
+                        onClick={() => toggleGastoExpand(gasto.id)}
+                        className="text-xs font-semibold text-gargom-accent hover:underline flex items-center gap-1 mt-3"
+                      >
+                        <span>{expandedGastoIds.includes(gasto.id) ? 'Ocultar detalles' : 'Ver todos los detalles'}</span>
+                      </button>
+
+                      {/* Collapsible Details Area */}
+                      {expandedGastoIds.includes(gasto.id) && (
+                        <div className="grid grid-cols-2 gap-x-4 gap-y-2 bg-slate-50/50 p-3 rounded-xl border border-slate-100/60 text-xs text-slate-600 mt-2">
+                          <div>
+                            <span className="font-bold block text-slate-400 uppercase tracking-wider text-[8px] mb-0.5">Nº Factura</span>
+                            <span className="font-semibold text-slate-800">{gasto.numero || '-'}</span>
+                          </div>
+                          <div>
+                            <span className="font-bold block text-slate-400 uppercase tracking-wider text-[8px] mb-0.5">Base Imponible</span>
+                            <span className="font-semibold text-slate-800">
+                              {gasto.baseImponible ? new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(gasto.baseImponible) : '-'}
+                            </span>
+                          </div>
+                          <div>
+                            <span className="font-bold block text-slate-400 uppercase tracking-wider text-[8px] mb-0.5">IVA (%)</span>
+                            <span className="font-semibold text-slate-800">{gasto.porcentajeIva !== null && gasto.porcentajeIva !== undefined ? `${gasto.porcentajeIva}%` : '-'}</span>
+                          </div>
+                          <div>
+                            <span className="font-bold block text-slate-400 uppercase tracking-wider text-[8px] mb-0.5">Forma de Pago</span>
+                            <span className="font-semibold text-slate-800">{gasto.formaPago || '-'}</span>
+                          </div>
+                          {gasto.observaciones && (
+                            <div className="col-span-full border-t border-slate-200/60 pt-1.5 mt-1">
+                              <span className="font-bold block text-slate-400 uppercase tracking-wider text-[8px] mb-0.5">Observaciones</span>
+                              <span className="font-medium text-slate-700">{gasto.observaciones}</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
 
                     {/* Actions */}

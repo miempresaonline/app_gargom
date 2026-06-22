@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useTransition, useEffect, useRef } from 'react';
+import { useState, useTransition, useEffect, useRef, Fragment } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, X, Package, FileText, Calendar, Building, Landmark, Pickaxe, HardHat, FileUp, Loader2, Trash2, Users, Copy, Search, Edit2, Upload, Sparkles, CheckCircle2, AlertCircle, Eye } from 'lucide-react';
+import { Plus, X, Package, FileText, Calendar, Building, Landmark, Pickaxe, HardHat, FileUp, Loader2, Trash2, Users, Copy, Search, Edit2, Upload, Sparkles, CheckCircle2, AlertCircle, Eye, Info } from 'lucide-react';
 import { createGasto, updateGasto, deleteGasto, parseInvoiceWithGroq } from './actions';
 
 export default function GastosClient({ 
@@ -22,6 +22,12 @@ export default function GastosClient({
   const [filterProject, setFilterProject] = useState<string>('ALL');
   const [sortConfig, setSortConfig] = useState<{key: string, direction: 'asc'|'desc'}>({ key: 'fecha', direction: 'desc' });
   const [viewMode, setViewMode] = useState<'grid'|'table'>('table');
+  const [expandedGastoIds, setExpandedGastoIds] = useState<number[]>([]);
+  const toggleGastoExpand = (id: number) => {
+    setExpandedGastoIds(prev => 
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+    );
+  };
   
   // Physical file upload state
   const [uploadProgress, setUploadProgress] = useState<'idle' | 'uploading' | 'scanning' | 'success' | 'error'>('idle');
@@ -471,6 +477,51 @@ export default function GastosClient({
                       </div>
                     )}
                   </div>
+
+                  {/* Toggle Details Button */}
+                  <button 
+                    type="button"
+                    onClick={() => toggleGastoExpand(gasto.id)}
+                    className="text-xs font-semibold text-gargom-accent hover:underline flex items-center gap-1 mt-3"
+                  >
+                    <span>{expandedGastoIds.includes(gasto.id) ? 'Ocultar detalles' : 'Ver todos los detalles'}</span>
+                  </button>
+
+                  {/* Collapsible Details Area */}
+                  {expandedGastoIds.includes(gasto.id) && (
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-2 bg-slate-50 p-3.5 rounded-2xl border border-slate-100 text-xs text-slate-600 mt-2">
+                      <div>
+                        <span className="font-bold block text-slate-400 uppercase tracking-wider text-[8px] mb-0.5">Nº Factura</span>
+                        <span className="font-semibold text-slate-800">{gasto.numero || '-'}</span>
+                      </div>
+                      <div>
+                        <span className="font-bold block text-slate-400 uppercase tracking-wider text-[8px] mb-0.5">Base Imponible</span>
+                        <span className="font-semibold text-slate-800">
+                          {gasto.baseImponible ? new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(gasto.baseImponible) : '-'}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="font-bold block text-slate-400 uppercase tracking-wider text-[8px] mb-0.5">IVA (%)</span>
+                        <span className="font-semibold text-slate-800">{gasto.porcentajeIva !== null && gasto.porcentajeIva !== undefined ? `${gasto.porcentajeIva}%` : '-'}</span>
+                      </div>
+                      <div>
+                        <span className="font-bold block text-slate-400 uppercase tracking-wider text-[8px] mb-0.5">Forma de Pago</span>
+                        <span className="font-semibold text-slate-800">{gasto.formaPago || '-'}</span>
+                      </div>
+                      <div className="col-span-full">
+                        <span className="font-bold block text-slate-400 uppercase tracking-wider text-[8px] mb-0.5">Obra de Referencia</span>
+                        <span className="font-semibold text-slate-800">
+                          {gasto.project?.nombreReferencia ? `${gasto.project.cliente} - ${gasto.project.nombreReferencia}` : (gasto.project?.direccion || '-')}
+                        </span>
+                      </div>
+                      {gasto.observaciones && (
+                        <div className="col-span-full border-t border-slate-200/60 pt-1.5 mt-1">
+                          <span className="font-bold block text-slate-400 uppercase tracking-wider text-[8px] mb-0.5">Observaciones</span>
+                          <span className="font-medium text-slate-700">{gasto.observaciones}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {/* Action Buttons */}
@@ -525,78 +576,151 @@ export default function GastosClient({
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {filteredGastos.map((gasto) => (
-                  <tr 
-                    key={gasto.id} 
-                    className={`transition-colors group hover:bg-slate-50/50 ${
-                      gasto.esGastoB ? 'bg-amber-50/20 hover:bg-amber-100/30' : ''
-                    }`}
-                  >
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {gasto.fecha ? new Date(gasto.fecha).toLocaleDateString('es-ES') : '-'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold ${
-                        gasto.tipo === 'GENERAL' ? 'bg-purple-100 text-purple-700' :
-                        gasto.tipo === 'PERSONAL' ? 'bg-green-100 text-green-700' :
-                        'bg-orange-100 text-orange-700'
-                      }`}>
-                        {gasto.tipo}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 font-medium text-slate-800">
-                      <div className="flex flex-col">
-                        <div className="flex items-center gap-2">
-                          <span>{gasto.concepto || (gasto.tipo === 'PERSONAL' ? `Horas: ${gasto.worker?.nombre}` : `Factura ${gasto.numero}`)}</span>
-                          {gasto.esGastoB && (
-                            <span className="inline-flex items-center px-1.5 py-0.2 rounded text-[9px] font-bold bg-amber-500/10 text-amber-700 border border-amber-500/20">
-                              Interno
+                  <Fragment key={gasto.id}>
+                    <tr 
+                      className={`transition-colors group hover:bg-slate-50/50 ${
+                        gasto.esGastoB ? 'bg-amber-50/20 hover:bg-amber-100/30' : ''
+                      }`}
+                    >
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {gasto.fecha ? new Date(gasto.fecha).toLocaleDateString('es-ES') : '-'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold ${
+                          gasto.tipo === 'GENERAL' ? 'bg-purple-100 text-purple-700' :
+                          gasto.tipo === 'PERSONAL' ? 'bg-green-100 text-green-700' :
+                          'bg-orange-100 text-orange-700'
+                        }`}>
+                          {gasto.tipo}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 font-medium text-slate-800">
+                        <div className="flex flex-col">
+                          <div className="flex items-center gap-2">
+                            <span>{gasto.concepto || (gasto.tipo === 'PERSONAL' ? `Horas: ${gasto.worker?.nombre}` : `Factura ${gasto.numero}`)}</span>
+                            {gasto.esGastoB && (
+                              <span className="inline-flex items-center px-1.5 py-0.2 rounded text-[9px] font-bold bg-amber-500/10 text-amber-700 border border-amber-500/20">
+                                Interno
+                              </span>
+                            )}
+                          </div>
+                          {gasto.supplier && (
+                            <span className="text-xs text-slate-500 font-normal mt-0.5">
+                              Prov: {gasto.supplier.nombre}
                             </span>
                           )}
                         </div>
-                        {gasto.supplier && (
-                          <span className="text-xs text-slate-500 font-normal mt-0.5">
-                            Prov: {gasto.supplier.nombre}
-                          </span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      {gasto.project?.cliente || '-'} <span className="text-xs text-slate-400 block">{gasto.project?.direccion}</span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {getPaymentBadge(gasto.estadoPago)}
-                      {gasto.formaPago && <span className="text-xs text-slate-400 block mt-1">{gasto.formaPago}</span>}
-                    </td>
-                    <td className="px-6 py-4 text-right font-bold text-gargom-blue whitespace-nowrap">
-                      {new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(gasto.importe || 0)}
-                    </td>
-                    <td className="px-6 py-4 text-center whitespace-nowrap">
-                      <div className="flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        {gasto.imagenUrl && (
-                          <a 
-                            href={gasto.imagenUrl} 
-                            target="_blank" 
-                            rel="noopener noreferrer" 
-                            className="p-1.5 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded transition flex items-center justify-center" 
-                            title="Ver Factura"
+                      </td>
+                      <td className="px-6 py-4">
+                        {gasto.project?.cliente || '-'} <span className="text-xs text-slate-400 block">{gasto.project?.direccion}</span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {getPaymentBadge(gasto.estadoPago)}
+                        {gasto.formaPago && <span className="text-xs text-slate-400 block mt-1">{gasto.formaPago}</span>}
+                      </td>
+                      <td className="px-6 py-4 text-right font-bold text-gargom-blue whitespace-nowrap">
+                        {new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(gasto.importe || 0)}
+                      </td>
+                      <td className="px-6 py-4 text-center whitespace-nowrap">
+                        <div className="flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          {gasto.imagenUrl && (
+                            <a 
+                              href={gasto.imagenUrl} 
+                              target="_blank" 
+                              rel="noopener noreferrer" 
+                              className="p-1.5 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded transition flex items-center justify-center" 
+                              title="Ver Factura"
+                            >
+                              <Eye size={16} />
+                            </a>
+                          )}
+                          <button 
+                            type="button"
+                            onClick={() => toggleGastoExpand(gasto.id)} 
+                            className={`p-1.5 rounded transition ${expandedGastoIds.includes(gasto.id) ? 'text-gargom-accent bg-blue-50' : 'text-slate-400 hover:text-gargom-accent hover:bg-blue-50'}`} 
+                            title={expandedGastoIds.includes(gasto.id) ? 'Ocultar detalles' : 'Ver todos los detalles'}
                           >
-                            <Eye size={16} />
-                          </a>
-                        )}
-                        <button onClick={() => openEditModal(gasto)} className="p-1.5 text-slate-400 hover:text-gargom-accent hover:bg-blue-50 rounded transition" title="Editar">
-                          <Edit2 size={16} />
-                        </button>
-                        {gasto.tipo === 'PERSONAL' && (
-                          <button onClick={() => handleClone(gasto)} className="p-1.5 text-slate-400 hover:text-gargom-accent hover:bg-blue-50 rounded transition" title="Clonar">
-                            <Copy size={16} />
+                            <Info size={16} />
                           </button>
-                        )}
-                        <button onClick={() => handleDelete(gasto.id)} disabled={isDeleting === gasto.id} className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded transition">
-                          {isDeleting === gasto.id ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
+                          <button onClick={() => openEditModal(gasto)} className="p-1.5 text-slate-400 hover:text-gargom-accent hover:bg-blue-50 rounded transition" title="Editar">
+                            <Edit2 size={16} />
+                          </button>
+                          {gasto.tipo === 'PERSONAL' && (
+                            <button onClick={() => handleClone(gasto)} className="p-1.5 text-slate-400 hover:text-gargom-accent hover:bg-blue-50 rounded transition" title="Clonar">
+                              <Copy size={16} />
+                            </button>
+                          )}
+                          <button onClick={() => handleDelete(gasto.id)} disabled={isDeleting === gasto.id} className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded transition">
+                            {isDeleting === gasto.id ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                    {expandedGastoIds.includes(gasto.id) && (
+                      <tr>
+                        <td colSpan={7} className="bg-slate-50/60 p-4 border-b border-slate-200">
+                          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 text-xs text-slate-600">
+                            <div>
+                              <span className="font-bold block text-slate-400 uppercase tracking-wider text-[8px] mb-0.5">Proveedor</span>
+                              <span className="font-semibold text-slate-800">{gasto.supplier?.nombre || '-'}</span>
+                            </div>
+                            <div>
+                              <span className="font-bold block text-slate-400 uppercase tracking-wider text-[8px] mb-0.5">Nº Factura</span>
+                              <span className="font-semibold text-slate-800">{gasto.numero || '-'}</span>
+                            </div>
+                            <div>
+                              <span className="font-bold block text-slate-400 uppercase tracking-wider text-[8px] mb-0.5">Base Imponible</span>
+                              <span className="font-semibold text-slate-800">
+                                {gasto.baseImponible ? new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(gasto.baseImponible) : '-'}
+                              </span>
+                            </div>
+                            <div>
+                              <span className="font-bold block text-slate-400 uppercase tracking-wider text-[8px] mb-0.5">IVA (%)</span>
+                              <span className="font-semibold text-slate-800">{gasto.porcentajeIva !== null && gasto.porcentajeIva !== undefined ? `${gasto.porcentajeIva}%` : '-'}</span>
+                            </div>
+                            <div>
+                              <span className="font-bold block text-slate-400 uppercase tracking-wider text-[8px] mb-0.5">Importe Total</span>
+                              <span className="font-semibold text-slate-800">
+                                {new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(gasto.importe || 0)}
+                              </span>
+                            </div>
+                            <div>
+                              <span className="font-bold block text-slate-400 uppercase tracking-wider text-[8px] mb-0.5">Forma de Pago</span>
+                              <span className="font-semibold text-slate-800">{gasto.formaPago || '-'}</span>
+                            </div>
+                            <div>
+                              <span className="font-bold block text-slate-400 uppercase tracking-wider text-[8px] mb-0.5">Cuenta de Pago</span>
+                              <span className="font-semibold text-slate-800">{gasto.bank?.nombre || '-'}</span>
+                            </div>
+                            <div className="col-span-2">
+                              <span className="font-bold block text-slate-400 uppercase tracking-wider text-[8px] mb-0.5">Obra de Referencia</span>
+                              <span className="font-semibold text-slate-800">
+                                {gasto.project?.nombreReferencia ? `${gasto.project.cliente} - ${gasto.project.nombreReferencia}` : (gasto.project?.direccion || '-')}
+                              </span>
+                            </div>
+                            {gasto.tipo === 'PERSONAL' && gasto.horas && (
+                              <>
+                                <div>
+                                  <span className="font-bold block text-slate-400 uppercase tracking-wider text-[8px] mb-0.5">Horas Trabajadas</span>
+                                  <span className="font-semibold text-slate-800">{gasto.horas} h</span>
+                                </div>
+                                <div>
+                                  <span className="font-bold block text-slate-400 uppercase tracking-wider text-[8px] mb-0.5">Trabajador</span>
+                                  <span className="font-semibold text-slate-800">{gasto.worker?.nombre || '-'}</span>
+                                </div>
+                              </>
+                            )}
+                            {gasto.observaciones && (
+                              <div className="col-span-full border-t border-slate-200/60 pt-2 mt-1">
+                                <span className="font-bold block text-slate-400 uppercase tracking-wider text-[8px] mb-0.5">Observaciones</span>
+                                <span className="font-medium text-slate-700">{gasto.observaciones}</span>
+                              </div>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
                 ))}
                 {filteredGastos.length === 0 && (
                   <tr>

@@ -23,6 +23,8 @@ export async function createGasto(prevState: any, formData: FormData) {
   const horas = formData.get('horas') ? parseFloat(formData.get('horas') as string) : null;
   const observaciones = formData.get('observaciones') as string || null;
 
+  const baseImponible = formData.get('baseImponible') ? parseFloat(formData.get('baseImponible') as string) : null;
+  const porcentajeIva = formData.get('porcentajeIva') ? parseFloat(formData.get('porcentajeIva') as string) : null;
   const supplierId = formData.get('supplierId') ? parseInt(formData.get('supplierId') as string) : null;
   const estadoPago = formData.get('estadoPago') as string || 'Pendiente';
   const formaPago = formData.get('formaPago') as string || null;
@@ -36,6 +38,8 @@ export async function createGasto(prevState: any, formData: FormData) {
         projectId,
         concepto,
         importe: isNaN(importe) ? null : importe,
+        baseImponible: isNaN(baseImponible as number) ? null : baseImponible,
+        porcentajeIva: isNaN(porcentajeIva as number) ? null : porcentajeIva,
         fecha,
         numero,
         fechaVencimiento,
@@ -124,6 +128,8 @@ export async function updateGasto(prevState: any, formData: FormData) {
   const horas = formData.get('horas') ? parseFloat(formData.get('horas') as string) : null;
   const observaciones = formData.get('observaciones') as string || null;
   
+  const baseImponible = formData.get('baseImponible') ? parseFloat(formData.get('baseImponible') as string) : null;
+  const porcentajeIva = formData.get('porcentajeIva') ? parseFloat(formData.get('porcentajeIva') as string) : null;
   const supplierId = formData.get('supplierId') ? parseInt(formData.get('supplierId') as string) : null;
   const estadoPago = formData.get('estadoPago') as string || 'Pendiente';
   const formaPago = formData.get('formaPago') as string || null;
@@ -138,6 +144,8 @@ export async function updateGasto(prevState: any, formData: FormData) {
         projectId,
         concepto,
         importe: isNaN(importe) ? null : importe,
+        baseImponible: isNaN(baseImponible as number) ? null : baseImponible,
+        porcentajeIva: isNaN(porcentajeIva as number) ? null : porcentajeIva,
         fecha,
         numero,
         fechaVencimiento,
@@ -262,7 +270,7 @@ export async function parseInvoiceWithGroq(base64ImageOrPath: string) {
       ? [
           {
             role: "user",
-            content: "Extract information from this invoice text. Return ONLY a valid JSON object without markdown formatting, code blocks or explanations. Required keys: 'concepto' (string: main supplier name or brief description), 'numero' (string: invoice number), 'importe' (number: total amount), 'fecha' (string: YYYY-MM-DD), 'fechaVencimiento' (string: YYYY-MM-DD). If a field is not found or cannot be extracted, use null.\n\nInvoice Text:\n" + pdfText
+            content: "Extract information from this invoice text. Return ONLY a valid JSON object without markdown formatting, code blocks or explanations. Required keys: 'concepto' (string: main supplier name or brief description), 'numero' (string: invoice number), 'importe' (number: total amount), 'baseImponible' (number: taxable base amount), 'porcentajeIva' (number: VAT rate like 21, 10, 4 or 0), 'fecha' (string: YYYY-MM-DD), 'fechaVencimiento' (string: YYYY-MM-DD). If a field is not found or cannot be extracted, use null.\n\nInvoice Text:\n" + pdfText
           }
         ]
       : [
@@ -271,7 +279,7 @@ export async function parseInvoiceWithGroq(base64ImageOrPath: string) {
             content: [
               {
                 type: "text",
-                text: "Extract information from this invoice. Return ONLY a valid JSON object without markdown or explanations. Required keys: 'concepto' (string: main supplier or brief description), 'numero' (string: invoice number), 'importe' (number: total amount), 'fecha' (string: YYYY-MM-DD), 'fechaVencimiento' (string: YYYY-MM-DD). If a field is not found, use null."
+                text: "Extract information from this invoice. Return ONLY a valid JSON object without markdown or explanations. Required keys: 'concepto' (string: main supplier or brief description), 'numero' (string: invoice number), 'importe' (number: total amount), 'baseImponible' (number: taxable base amount), 'porcentajeIva' (number: VAT rate like 21, 10, 4 or 0), 'fecha' (string: YYYY-MM-DD), 'fechaVencimiento' (string: YYYY-MM-DD). If a field is not found, use null."
               },
               {
                 type: "image_url",

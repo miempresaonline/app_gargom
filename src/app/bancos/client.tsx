@@ -5,6 +5,50 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, X, Landmark, Hash, Loader2, Edit2, Trash2 } from 'lucide-react';
 import { createBank, updateBank, deleteBank } from './actions';
 
+function groupBankExpenses(expenses: any[]) {
+  const groups: { [key: string]: any } = {};
+  const individualPayments: any[] = [];
+
+  expenses.forEach(expense => {
+    const hasGroupKeys = expense.numero && expense.supplierId && expense.fecha;
+    if (hasGroupKeys) {
+      const dateStr = new Date(expense.fecha).toISOString().split('T')[0];
+      const key = `${expense.supplierId}-${expense.numero}-${dateStr}`;
+      
+      if (!groups[key]) {
+        groups[key] = {
+          key,
+          fecha: expense.fecha,
+          numero: expense.numero,
+          supplierName: expense.supplier?.nombre || 'Proveedor Desconocido',
+          totalImporte: 0,
+          expenses: []
+        };
+      }
+      groups[key].totalImporte += expense.importe || 0;
+      groups[key].expenses.push(expense);
+    } else {
+      individualPayments.push({
+        key: `ind-${expense.id}`,
+        fecha: expense.fecha,
+        numero: expense.numero || 'S/N',
+        supplierName: expense.supplier?.nombre || expense.concepto || 'Gasto General',
+        totalImporte: expense.importe || 0,
+        expenses: [expense]
+      });
+    }
+  });
+
+  const allPayments = [...Object.values(groups), ...individualPayments];
+  allPayments.sort((a, b) => {
+    const timeA = a.fecha ? new Date(a.fecha).getTime() : 0;
+    const timeB = b.fecha ? new Date(b.fecha).getTime() : 0;
+    return timeB - timeA;
+  });
+
+  return allPayments;
+}
+
 export default function BancosClient({ initialBancos }: { initialBancos: any[] }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [state, formAction, isPending] = useActionState(createBank, null);
@@ -16,6 +60,13 @@ export default function BancosClient({ initialBancos }: { initialBancos: any[] }
   const [isDeleting, setIsDeleting] = useState<number | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('nombre_asc');
+  const [expandedBankIds, setExpandedBankIds] = useState<number[]>([]);
+
+  const toggleBankExpand = (id: number) => {
+    setExpandedBankIds(prev => 
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+    );
+  };
 
   useEffect(() => {
     if (state?.success) {
@@ -104,73 +155,169 @@ export default function BancosClient({ initialBancos }: { initialBancos: any[] }
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.9 }}
               transition={{ delay: index * 0.05 }}
-              className="bg-gradient-to-br from-slate-900 to-slate-800 text-white rounded-[24px] p-6 relative overflow-hidden group shadow-2xl shadow-slate-900/20 aspect-[1.6/1] flex flex-col justify-between"
+              className="bg-white rounded-[24px] border border-slate-100 shadow-lg shadow-slate-200/50 overflow-hidden flex flex-col group/container"
             >
-              {/* Card Decoratives */}
-              <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -mr-20 -mt-20 blur-2xl" />
-              <div className="absolute bottom-0 left-0 w-40 h-40 bg-gargom-accent/20 rounded-full -ml-10 -mb-10 blur-2xl" />
-              
-              <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-20">
-                {editingId === banco.id ? (
-                  <button onClick={() => handleSaveEdit(banco.id)} disabled={isUpdating} className="p-2 bg-gargom-accent text-white rounded-lg hover:bg-blue-600 transition">
-                    {isUpdating ? <Loader2 size={16} className="animate-spin" /> : <Landmark size={16} />}
+              {/* Credit Card Visual */}
+              <div className="bg-gradient-to-br from-slate-900 to-slate-800 text-white p-6 relative overflow-hidden group/card aspect-[1.6/1] flex flex-col justify-between shadow-inner">
+                {/* Card Decoratives */}
+                <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -mr-20 -mt-20 blur-2xl" />
+                <div className="absolute bottom-0 left-0 w-40 h-40 bg-gargom-accent/20 rounded-full -ml-10 -mb-10 blur-2xl" />
+                
+                <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover/card:opacity-100 group-hover/container:opacity-100 transition-opacity z-20">
+                  {editingId === banco.id ? (
+                    <button onClick={() => handleSaveEdit(banco.id)} disabled={isUpdating} className="p-2 bg-gargom-accent text-white rounded-lg hover:bg-blue-600 transition">
+                      {isUpdating ? <Loader2 size={16} className="animate-spin" /> : <Landmark size={16} />}
+                    </button>
+                  ) : (
+                    <button onClick={() => { setEditingId(banco.id); setEditNombre(banco.nombre); setEditCuenta(banco.numeroCuenta); }} className="p-2 bg-white/10 backdrop-blur-md text-white rounded-lg shadow hover:bg-white/20 transition">
+                      <Edit2 size={16} />
+                    </button>
+                  )}
+                  <button onClick={() => handleDelete(banco.id)} disabled={isDeleting === banco.id} className="p-2 bg-white/10 backdrop-blur-md text-white rounded-lg shadow hover:bg-red-500/80 transition">
+                    {isDeleting === banco.id ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
                   </button>
-                ) : (
-                  <button onClick={() => { setEditingId(banco.id); setEditNombre(banco.nombre); setEditCuenta(banco.numeroCuenta); }} className="p-2 bg-white/10 backdrop-blur-md text-white rounded-lg shadow hover:bg-white/20 transition">
-                    <Edit2 size={16} />
-                  </button>
-                )}
-                <button onClick={() => handleDelete(banco.id)} disabled={isDeleting === banco.id} className="p-2 bg-white/10 backdrop-blur-md text-white rounded-lg shadow hover:bg-red-500/80 transition">
-                  {isDeleting === banco.id ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
-                </button>
-              </div>
+                </div>
 
-              {/* Card Top */}
-              <div className="flex items-start justify-between relative z-10">
-                <div className="w-12 h-8 bg-yellow-400/80 rounded border border-yellow-300/50 flex items-center justify-center opacity-80 shadow-inner">
-                  <div className="w-8 h-4 border border-yellow-600/30 rounded-sm grid grid-cols-3 gap-0.5">
-                    <div className="border-r border-b border-yellow-600/20"></div>
-                    <div className="border-r border-b border-yellow-600/20"></div>
-                    <div className="border-b border-yellow-600/20"></div>
+                {/* Card Top */}
+                <div className="flex items-start justify-between relative z-10">
+                  <div className="w-12 h-8 bg-yellow-400/80 rounded border border-yellow-300/50 flex items-center justify-center opacity-80 shadow-inner">
+                    <div className="w-8 h-4 border border-yellow-600/30 rounded-sm grid grid-cols-3 gap-0.5">
+                      <div className="border-r border-b border-yellow-600/20"></div>
+                      <div className="border-r border-b border-yellow-600/20"></div>
+                      <div className="border-b border-yellow-600/20"></div>
+                    </div>
+                  </div>
+                  
+                  <div className="text-right">
+                    {editingId === banco.id ? (
+                      <input 
+                        autoFocus
+                        type="text" 
+                        value={editNombre} 
+                        onChange={e => setEditNombre(e.target.value)}
+                        className="font-bold text-lg text-white border-b-2 border-white/50 focus:outline-none bg-transparent text-right w-full"
+                      />
+                    ) : (
+                      <h3 className="font-bold text-xl tracking-wider uppercase opacity-90">{banco.nombre}</h3>
+                    )}
                   </div>
                 </div>
-                
-                <div className="text-right">
+
+                {/* Card Number (IBAN) */}
+                <div className="relative z-10 mt-auto mb-6">
                   {editingId === banco.id ? (
                     <input 
-                      autoFocus
                       type="text" 
-                      value={editNombre} 
-                      onChange={e => setEditNombre(e.target.value)}
-                      className="font-bold text-lg text-white border-b-2 border-white/50 focus:outline-none bg-transparent text-right w-full"
+                      value={editCuenta} 
+                      onChange={e => setEditCuenta(e.target.value)}
+                      className="border-b border-white/50 focus:outline-none bg-transparent w-full font-mono text-xl tracking-widest uppercase"
                     />
                   ) : (
-                    <h3 className="font-bold text-xl tracking-wider uppercase opacity-90">{banco.nombre}</h3>
+                    <div className="font-mono text-lg md:text-xl tracking-[0.2em] uppercase text-white/90 drop-shadow-md">
+                      {/* Format IBAN in groups of 4 if possible */}
+                      {banco.numeroCuenta.replace(/(.{4})/g, '$1 ').trim()}
+                    </div>
                   )}
+                </div>
+
+                {/* Card Bottom */}
+                <div className="flex items-end justify-between relative z-10 opacity-60 font-mono text-xs uppercase tracking-widest">
+                  <span>IBAN / CUENTA</span>
+                  <Landmark size={24} className="opacity-50" />
                 </div>
               </div>
 
-              {/* Card Number (IBAN) */}
-              <div className="relative z-10 mt-auto mb-6">
-                {editingId === banco.id ? (
-                  <input 
-                    type="text" 
-                    value={editCuenta} 
-                    onChange={e => setEditCuenta(e.target.value)}
-                    className="border-b border-white/50 focus:outline-none bg-transparent w-full font-mono text-xl tracking-widest uppercase"
-                  />
-                ) : (
-                  <div className="font-mono text-lg md:text-xl tracking-[0.2em] uppercase text-white/90 drop-shadow-md">
-                    {/* Format IBAN in groups of 4 if possible */}
-                    {banco.numeroCuenta.replace(/(.{4})/g, '$1 ').trim()}
-                  </div>
-                )}
-              </div>
+              {/* Payments Section */}
+              <div className="border-t border-slate-100 bg-slate-50/50">
+                <button
+                  type="button"
+                  onClick={() => toggleBankExpand(banco.id)}
+                  className="w-full px-5 py-3 flex items-center justify-between text-sm font-semibold text-slate-600 hover:bg-slate-100 transition-colors focus:outline-none"
+                >
+                  <span className="flex items-center gap-1.5">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-400"><rect x="2" y="4" width="20" height="16" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12" y2="18"></line></svg>
+                    Ver Pagos Asociados ({banco.expenses?.length || 0})
+                  </span>
+                  <svg 
+                    xmlns="http://www.w3.org/2000/svg" 
+                    width="16" 
+                    height="16" 
+                    viewBox="0 0 24 24" 
+                    fill="none" 
+                    stroke="currentColor" 
+                    strokeWidth="2" 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round" 
+                    className={`text-slate-400 transition-transform ${expandedBankIds.includes(banco.id) ? 'rotate-180' : ''}`}
+                  >
+                    <polyline points="6 9 12 15 18 9"></polyline>
+                  </svg>
+                </button>
 
-              {/* Card Bottom */}
-              <div className="flex items-end justify-between relative z-10 opacity-60 font-mono text-xs uppercase tracking-widest">
-                <span>IBAN / CUENTA</span>
-                <Landmark size={24} className="opacity-50" />
+                <AnimatePresence>
+                  {expandedBankIds.includes(banco.id) && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      className="overflow-hidden border-t border-slate-100 bg-white"
+                    >
+                      {banco.expenses && banco.expenses.length > 0 ? (
+                        <div className="divide-y divide-slate-100 max-h-72 overflow-y-auto custom-scrollbar">
+                          {groupBankExpenses(banco.expenses).map((payment) => {
+                            const hasSplits = payment.expenses.length > 1;
+                            return (
+                              <div key={payment.key} className="p-4 hover:bg-slate-50/50 transition-colors space-y-2">
+                                <div className="flex justify-between items-start">
+                                  <div className="min-w-0 flex-1">
+                                    <div className="font-bold text-slate-800 text-sm truncate">
+                                      {payment.supplierName}
+                                    </div>
+                                    <div className="flex items-center gap-1.5 text-xs text-slate-400 font-medium mt-0.5">
+                                      <span>Factura: {payment.numero || 'S/N'}</span>
+                                      <span>•</span>
+                                      <span>{payment.fecha ? new Date(payment.fecha).toLocaleDateString('es-ES') : '-'}</span>
+                                      {hasSplits && (
+                                        <>
+                                          <span>•</span>
+                                          <span className="inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-bold bg-blue-50 text-blue-600 border border-blue-100">
+                                            {payment.expenses.length} desgloses
+                                          </span>
+                                        </>
+                                      )}
+                                    </div>
+                                  </div>
+                                  <div className="text-right pl-2 shrink-0">
+                                    <span className="font-bold text-gargom-blue text-sm">
+                                      {new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(payment.totalImporte)}
+                                    </span>
+                                  </div>
+                                </div>
+
+                                <div className="bg-slate-50/50 rounded-lg p-2.5 border border-slate-100 space-y-1.5 text-xs">
+                                  {payment.expenses.map((expense: any) => (
+                                    <div key={expense.id} className="flex justify-between items-center text-slate-600">
+                                      <div className="truncate pr-4 flex-1">
+                                        <span className="font-semibold text-slate-800">{expense.project?.nombreReferencia || expense.project?.cliente || 'Obra'}</span>: {expense.concepto || 'Gasto'}
+                                      </div>
+                                      <div className="font-mono text-slate-700 whitespace-nowrap shrink-0">
+                                        {new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(expense.importe || 0)}
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <div className="p-4 text-center text-xs text-slate-400 font-medium">
+                          No hay pagos registrados para esta cuenta.
+                        </div>
+                      )}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             </motion.div>
           ))}

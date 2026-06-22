@@ -74,6 +74,8 @@ export default function GastosClient({
               ...prev,
               concepto: data.concepto || prev?.concepto || '',
               importe: data.importe || prev?.importe || '',
+              baseImponible: data.baseImponible || prev?.baseImponible || '',
+              porcentajeIva: data.porcentajeIva !== undefined ? data.porcentajeIva : (prev?.porcentajeIva || ''),
               numero: data.numero || prev?.numero || '',
               fecha: data.fecha ? new Date(data.fecha).toISOString() : prev?.fecha,
               fechaVencimiento: data.fechaVencimiento ? new Date(data.fechaVencimiento).toISOString() : prev?.fechaVencimiento,
@@ -122,6 +124,42 @@ export default function GastosClient({
   const [selectedWorkerId, setSelectedWorkerId] = useState<string>('');
   const [horas, setHoras] = useState<string>('');
   const [personalImporte, setPersonalImporte] = useState<number>(0);
+
+  const [baseImponible, setBaseImponible] = useState<string>('');
+  const [porcentajeIva, setPorcentajeIva] = useState<string>('');
+  const [importe, setImporte] = useState<string>('');
+
+  useEffect(() => {
+    if (isModalOpen) {
+      setBaseImponible(editingGasto?.baseImponible?.toString() || '');
+      setPorcentajeIva(editingGasto?.porcentajeIva?.toString() || '');
+      setImporte(editingGasto?.importe?.toString() || '');
+    }
+  }, [editingGasto, isModalOpen]);
+
+  const handleBaseChange = (val: string) => {
+    setBaseImponible(val);
+    const base = parseFloat(val);
+    const iva = parseFloat(porcentajeIva);
+    if (!isNaN(base)) {
+      const calculated = base * (1 + (isNaN(iva) ? 0 : iva) / 100);
+      setImporte(calculated.toFixed(2));
+    }
+  };
+
+  const handleIvaChange = (val: string) => {
+    setPorcentajeIva(val);
+    const base = parseFloat(baseImponible);
+    const iva = parseFloat(val);
+    if (!isNaN(base)) {
+      const calculated = base * (1 + (isNaN(iva) ? 0 : iva) / 100);
+      setImporte(calculated.toFixed(2));
+    }
+  };
+
+  const handleImporteChange = (val: string) => {
+    setImporte(val);
+  };
 
   useEffect(() => {
     if (selectedWorkerId && horas) {
@@ -396,6 +434,11 @@ export default function GastosClient({
                       <h3 className="font-bold text-lg text-slate-800 mt-1">
                         {gasto.concepto || (gasto.tipo === 'PERSONAL' ? `Horas: ${gasto.worker?.nombre}` : `Factura ${gasto.numero}`)}
                       </h3>
+                      {gasto.supplier && (
+                        <p className="text-xs text-slate-500 font-medium mt-0.5">
+                          Prov: {gasto.supplier.nombre}
+                        </p>
+                      )}
                     </div>
                     <div className="text-right">
                       <div className="font-bold text-xl text-gargom-blue">
@@ -501,11 +544,18 @@ export default function GastosClient({
                       </span>
                     </td>
                     <td className="px-6 py-4 font-medium text-slate-800">
-                      <div className="flex items-center gap-2">
-                        <span>{gasto.concepto || (gasto.tipo === 'PERSONAL' ? `Horas: ${gasto.worker?.nombre}` : `Factura ${gasto.numero}`)}</span>
-                        {gasto.esGastoB && (
-                          <span className="inline-flex items-center px-1.5 py-0.2 rounded text-[9px] font-bold bg-amber-500/10 text-amber-700 border border-amber-500/20">
-                            Interno
+                      <div className="flex flex-col">
+                        <div className="flex items-center gap-2">
+                          <span>{gasto.concepto || (gasto.tipo === 'PERSONAL' ? `Horas: ${gasto.worker?.nombre}` : `Factura ${gasto.numero}`)}</span>
+                          {gasto.esGastoB && (
+                            <span className="inline-flex items-center px-1.5 py-0.2 rounded text-[9px] font-bold bg-amber-500/10 text-amber-700 border border-amber-500/20">
+                              Interno
+                            </span>
+                          )}
+                        </div>
+                        {gasto.supplier && (
+                          <span className="text-xs text-slate-500 font-normal mt-0.5">
+                            Prov: {gasto.supplier.nombre}
                           </span>
                         )}
                       </div>
@@ -741,8 +791,44 @@ export default function GastosClient({
                           <input type="text" name="numero" defaultValue={editingGasto?.numero} className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl" placeholder="T-2026-001 o F-2026-001" />
                         </div>
                         <div className="space-y-1">
-                          <label className="text-sm font-medium text-slate-700 ml-1">Importe (€) *</label>
-                          <input type="number" name="importe" defaultValue={editingGasto?.importe} step="0.01" required className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl" placeholder="0.00" />
+                          <label className="text-sm font-medium text-slate-700 ml-1">Base Imponible (€)</label>
+                          <input 
+                            type="number" 
+                            name="baseImponible" 
+                            value={baseImponible} 
+                            onChange={(e) => handleBaseChange(e.target.value)} 
+                            step="0.01" 
+                            className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl" 
+                            placeholder="0.00" 
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-sm font-medium text-slate-700 ml-1">IVA (%)</label>
+                          <select 
+                            name="porcentajeIva" 
+                            value={porcentajeIva} 
+                            onChange={(e) => handleIvaChange(e.target.value)} 
+                            className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl"
+                          >
+                            <option value="">Selecciona...</option>
+                            <option value="21">21%</option>
+                            <option value="10">10%</option>
+                            <option value="4">4%</option>
+                            <option value="0">0%</option>
+                          </select>
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-sm font-medium text-slate-700 ml-1">Importe Total (€) *</label>
+                          <input 
+                            type="number" 
+                            name="importe" 
+                            value={importe} 
+                            onChange={(e) => handleImporteChange(e.target.value)} 
+                            step="0.01" 
+                            required 
+                            className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-semibold" 
+                            placeholder="0.00" 
+                          />
                         </div>
                         <div className="space-y-1">
                           <label className="text-sm font-medium text-slate-700 ml-1">Fecha de Factura / Gasto *</label>
@@ -797,8 +883,44 @@ export default function GastosClient({
                           <input type="text" name="numero" defaultValue={editingGasto?.numero} required className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl" placeholder="F-2024-001" />
                         </div>
                         <div className="space-y-1">
-                          <label className="text-sm font-medium text-slate-700 ml-1">Importe (€) *</label>
-                          <input type="number" name="importe" defaultValue={editingGasto?.importe} step="0.01" required className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl" placeholder="0.00" />
+                          <label className="text-sm font-medium text-slate-700 ml-1">Base Imponible (€)</label>
+                          <input 
+                            type="number" 
+                            name="baseImponible" 
+                            value={baseImponible} 
+                            onChange={(e) => handleBaseChange(e.target.value)} 
+                            step="0.01" 
+                            className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl" 
+                            placeholder="0.00" 
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-sm font-medium text-slate-700 ml-1">IVA (%)</label>
+                          <select 
+                            name="porcentajeIva" 
+                            value={porcentajeIva} 
+                            onChange={(e) => handleIvaChange(e.target.value)} 
+                            className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl"
+                          >
+                            <option value="">Selecciona...</option>
+                            <option value="21">21%</option>
+                            <option value="10">10%</option>
+                            <option value="4">4%</option>
+                            <option value="0">0%</option>
+                          </select>
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-sm font-medium text-slate-700 ml-1">Importe Total (€) *</label>
+                          <input 
+                            type="number" 
+                            name="importe" 
+                            value={importe} 
+                            onChange={(e) => handleImporteChange(e.target.value)} 
+                            step="0.01" 
+                            required 
+                            className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-semibold" 
+                            placeholder="0.00" 
+                          />
                         </div>
                         <div className="space-y-1">
                           <label className="text-sm font-medium text-slate-700 ml-1">Fecha de Factura</label>

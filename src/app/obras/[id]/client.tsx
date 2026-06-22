@@ -45,6 +45,29 @@ export default function ObraDetailClient({
   const [supplierId, setSupplierId] = useState('');
   const [bankId, setBankId] = useState('');
 
+  const [baseImponible, setBaseImponible] = useState('');
+  const [porcentajeIva, setPorcentajeIva] = useState('');
+
+  const handleBaseChange = (val: string) => {
+    setBaseImponible(val);
+    const base = parseFloat(val);
+    const iva = parseFloat(porcentajeIva);
+    if (!isNaN(base)) {
+      const calculated = base * (1 + (isNaN(iva) ? 0 : iva) / 100);
+      setImporte(calculated.toFixed(2));
+    }
+  };
+
+  const handleIvaChange = (val: string) => {
+    setPorcentajeIva(val);
+    const base = parseFloat(baseImponible);
+    const iva = parseFloat(val);
+    if (!isNaN(base)) {
+      const calculated = base * (1 + (isNaN(iva) ? 0 : iva) / 100);
+      setImporte(calculated.toFixed(2));
+    }
+  };
+
   // IA upload & scan states
   const [uploadProgress, setUploadProgress] = useState<'idle' | 'uploading' | 'scanning' | 'success' | 'error'>('idle');
   const [uploadedUrl, setUploadedUrl] = useState<string | null>(null);
@@ -111,6 +134,8 @@ export default function ObraDetailClient({
     setSelectedType(gasto.tipo);
     setConcepto(gasto.concepto || '');
     setImporte(gasto.importe ? gasto.importe.toString() : '');
+    setBaseImponible(gasto.baseImponible ? gasto.baseImponible.toString() : '');
+    setPorcentajeIva(gasto.porcentajeIva ? gasto.porcentajeIva.toString() : '');
     setFecha(new Date().toISOString().split('T')[0]);
     setSupplierId(gasto.supplierId ? gasto.supplierId.toString() : '');
     setBankId(gasto.bankId ? gasto.bankId.toString() : '');
@@ -124,6 +149,8 @@ export default function ObraDetailClient({
     setSelectedType(type);
     setConcepto('');
     setImporte('');
+    setBaseImponible('');
+    setPorcentajeIva('');
     setNumero('');
     setFecha(new Date().toISOString().split('T')[0]);
     setFechaVencimiento('');
@@ -171,6 +198,8 @@ export default function ObraDetailClient({
           const data = aiRes.data;
           if (data.concepto) setConcepto(data.concepto);
           if (data.importe) setImporte(data.importe.toString());
+          if (data.baseImponible) setBaseImponible(data.baseImponible.toString());
+          if (data.porcentajeIva !== undefined && data.porcentajeIva !== null) setPorcentajeIva(data.porcentajeIva.toString());
           if (data.numero) setNumero(data.numero);
           if (data.fecha) setFecha(data.fecha);
           if (data.fechaVencimiento) setFechaVencimiento(data.fechaVencimiento);
@@ -1019,14 +1048,41 @@ export default function ObraDetailClient({
                           />
                         </div>
                         <div className="space-y-1">
-                          <label className="text-sm font-medium text-slate-700 ml-1">Importe (€) *</label>
+                          <label className="text-sm font-medium text-slate-700 ml-1">Base Imponible (€)</label>
+                          <input 
+                            type="number" 
+                            name="baseImponible" 
+                            value={baseImponible} 
+                            onChange={(e) => handleBaseChange(e.target.value)} 
+                            step="0.01" 
+                            className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl" 
+                            placeholder="0.00" 
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-sm font-medium text-slate-700 ml-1">IVA (%)</label>
+                          <select 
+                            name="porcentajeIva" 
+                            value={porcentajeIva} 
+                            onChange={(e) => handleIvaChange(e.target.value)} 
+                            className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl"
+                          >
+                            <option value="">Selecciona...</option>
+                            <option value="21">21%</option>
+                            <option value="10">10%</option>
+                            <option value="4">4%</option>
+                            <option value="0">0%</option>
+                          </select>
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-sm font-medium text-slate-700 ml-1">Importe Total (€) *</label>
                           <input 
                             type="number" 
                             name="importe" 
+                            value={importe} 
+                            onChange={(e) => setImporte(e.target.value)} 
                             step="0.01" 
                             required 
-                            value={importe}
-                            onChange={e => setImporte(e.target.value)}
                             className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-lg font-bold text-gargom-accent" 
                             placeholder="0.00" 
                           />
@@ -1070,14 +1126,41 @@ export default function ObraDetailClient({
                           />
                         </div>
                         <div className="space-y-1">
-                          <label className="text-sm font-medium text-slate-700 ml-1">Importe (€) *</label>
+                          <label className="text-sm font-medium text-slate-700 ml-1">Base Imponible (€)</label>
+                          <input 
+                            type="number" 
+                            name="baseImponible" 
+                            value={baseImponible} 
+                            onChange={(e) => handleBaseChange(e.target.value)} 
+                            step="0.01" 
+                            className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl" 
+                            placeholder="0.00" 
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-sm font-medium text-slate-700 ml-1">IVA (%)</label>
+                          <select 
+                            name="porcentajeIva" 
+                            value={porcentajeIva} 
+                            onChange={(e) => handleIvaChange(e.target.value)} 
+                            className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl"
+                          >
+                            <option value="">Selecciona...</option>
+                            <option value="21">21%</option>
+                            <option value="10">10%</option>
+                            <option value="4">4%</option>
+                            <option value="0">0%</option>
+                          </select>
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-sm font-medium text-slate-700 ml-1">Importe Total (€) *</label>
                           <input 
                             type="number" 
                             name="importe" 
+                            value={importe} 
+                            onChange={(e) => setImporte(e.target.value)} 
                             step="0.01" 
                             required 
-                            value={importe}
-                            onChange={e => setImporte(e.target.value)}
                             className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-lg font-bold text-gargom-accent" 
                             placeholder="0.00" 
                           />

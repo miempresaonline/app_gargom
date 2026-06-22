@@ -30,6 +30,8 @@ export async function createGastoObra(prevState: any, formData: FormData) {
   const esGastoB = formData.get('esGastoB') === 'true';
   const imagenUrl = (formData.get('imagenUrl') as string) || null;
   const supplierId = formData.get('supplierId') ? parseInt(formData.get('supplierId') as string) : null;
+  const baseImponible = formData.get('baseImponible') ? parseFloat(formData.get('baseImponible') as string) : null;
+  const porcentajeIva = formData.get('porcentajeIva') ? parseFloat(formData.get('porcentajeIva') as string) : null;
 
   try {
     const expense = await prisma.expense.create({
@@ -49,7 +51,9 @@ export async function createGastoObra(prevState: any, formData: FormData) {
         formaPago,
         esGastoB,
         imagenUrl,
-        supplierId
+        supplierId,
+        baseImponible: isNaN(baseImponible as number) ? null : baseImponible,
+        porcentajeIva: isNaN(porcentajeIva as number) ? null : porcentajeIva,
       },
     });
 

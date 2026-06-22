@@ -116,6 +116,8 @@ model Expense {
   
   estadoPago       String      @default("Pendiente")
   formaPago        String?
+  baseImponible    Float?
+  porcentajeIva    Float?
   esGastoB         Boolean     @default(false)
   imagenUrl        String?
   

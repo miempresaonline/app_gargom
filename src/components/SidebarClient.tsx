@@ -151,7 +151,7 @@ export default function SidebarClient({ session, devMode }: SidebarClientProps) 
   }
 
   return (
-    <aside className="h-full w-full bg-[var(--sidebar-bg)] backdrop-blur-xl text-[var(--sidebar-text)] border-r border-[var(--sidebar-border)] flex flex-col z-50 overflow-visible relative shadow-[4px_0_30px_rgba(15,23,42,0.02)] select-none transition-all duration-300">
+    <aside className={`h-full w-full bg-[var(--sidebar-bg)] backdrop-blur-xl text-[var(--sidebar-text)] border-r border-[var(--sidebar-border)] flex flex-col z-50 overflow-visible relative shadow-[4px_0_30px_rgba(15,23,42,0.02)] select-none transition-all duration-300 ${isMobile ? 'pt-16' : ''}`}>
       {/* Collapse/Expand Floating Trigger Arrow Button */}
       <button
         onClick={toggleSidebar}
@@ -170,20 +170,22 @@ export default function SidebarClient({ session, devMode }: SidebarClientProps) 
       <div className="absolute bottom-[-60px] left-[-60px] w-56 h-56 bg-gradient-to-tr from-indigo-500/5 to-transparent blur-[60px] rounded-full pointer-events-none" />
 
       {/* Logo Container */}
-      <div className={`flex items-center justify-center border-b border-[var(--sidebar-border)] relative z-10 py-4 transition-all duration-300 ${isMenuCollapsed ? 'h-20 px-2' : 'h-28 px-6'}`}>
-        {isMenuCollapsed ? (
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[var(--gargom-accent)] to-[var(--gargom-blue)] flex items-center justify-center shadow-[0_4px_12px_rgba(37,99,235,0.15)] select-none">
-            <span className="text-white text-xl font-black tracking-tighter">G</span>
-          </div>
-        ) : (
-          <img 
-            src="https://ltukyxwcvivaiuqaxlgo.supabase.co/storage/v1/object/sign/COSAS/gargom/logo_gargom_png_transparente_fondos_claros%20(1).png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV83Y2FiZGYxMy0yNDVkLTQ2ZWUtYjFjNy0xM2Q3MGIwNTg5NDMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJDT1NBUy9nYXJnb20vbG9nb19nYXJnb21fcG5nX3RyYW5zcGFyZW50ZV9mb25kb3NfY2xhcm9zICgxKS5wbmciLCJpYXQiOjE3Nzc0MTM5MzEsImV4cCI6MTgwODk0OTkzMX0.DSR-3st04yu-p1jHlw_EmZ4VuhAt2tlybp7Rl0h5DLg" 
-            alt="Gargom Logo" 
-            className="h-20 w-auto object-contain drop-shadow-[0_4px_12px_rgba(37,99,235,0.05)] transition-all duration-300"
-            style={{ filter: 'var(--sidebar-logo-filter)' }}
-          />
-        )}
-      </div>
+      {!isMobile && (
+        <div className={`flex items-center justify-center border-b border-[var(--sidebar-border)] relative z-10 py-4 transition-all duration-300 ${isMenuCollapsed ? 'h-20 px-2' : 'h-28 px-6'}`}>
+          {isMenuCollapsed ? (
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[var(--gargom-accent)] to-[var(--gargom-blue)] flex items-center justify-center shadow-[0_4px_12px_rgba(37,99,235,0.15)] select-none">
+              <span className="text-white text-xl font-black tracking-tighter">G</span>
+            </div>
+          ) : (
+            <img 
+              src="https://ltukyxwcvivaiuqaxlgo.supabase.co/storage/v1/object/sign/COSAS/gargom/logo_gargom_png_transparente_fondos_claros%20(1).png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV83Y2FiZGYxMy0yNDVkLTQ2ZWUtYjFjNy0xM2Q3MGIwNTg5NDMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJDT1NBUy9nYXJnb20vbG9nb19nYXJnb21fcG5nX3RyYW5zcGFyZW50ZV9mb25kb3NfY2xhcm9zICgxKS5wbmciLCJpYXQiOjE3Nzc0MTM5MzEsImV4cCI6MTgwODk0OTkzMX0.DSR-3st04yu-p1jHlw_EmZ4VuhAt2tlybp7Rl0h5DLg" 
+              alt="Gargom Logo" 
+              className="h-20 w-auto object-contain drop-shadow-[0_4px_12px_rgba(37,99,235,0.05)] transition-all duration-300"
+              style={{ filter: 'var(--sidebar-logo-filter)' }}
+            />
+          )}
+        </div>
+      )}
 
       {/* Navigation menu */}
       <nav className={`flex-1 overflow-y-auto py-5 flex flex-col gap-5 relative z-10 custom-scrollbar scroll-smooth ${isMenuCollapsed ? 'px-2' : 'px-4'}`}>

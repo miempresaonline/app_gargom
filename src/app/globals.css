@@ -25,18 +25,18 @@
   --gargom-border: #E2E8F0;
   
   /* Sidebar Variables */
-  --sidebar-bg: rgba(255, 255, 255, 0.85);
+  --sidebar-bg: rgba(255, 255, 255, 0.7);
   --sidebar-text: #1e293b;
-  --sidebar-border: rgba(226, 232, 240, 0.8);
-  --sidebar-active-bg: linear-gradient(to right, #eff6ff, rgba(239, 246, 255, 0.5));
-  --sidebar-active-border: rgba(191, 219, 254, 0.5);
-  --sidebar-active-line: linear-gradient(to bottom, #3b82f6, #4f46e5);
-  --sidebar-active-text: #1d4ed8;
+  --sidebar-border: rgba(226, 232, 240, 0.5);
+  --sidebar-active-bg: linear-gradient(135deg, rgba(59, 130, 246, 0.08) 0%, rgba(59, 130, 246, 0.02) 100%);
+  --sidebar-active-border: rgba(59, 130, 246, 0.12);
+  --sidebar-active-line: linear-gradient(to bottom, #3b82f6, #60a5fa);
+  --sidebar-active-text: #1e40af;
   --sidebar-active-icon: #2563eb;
-  --sidebar-hover-bg: rgba(241, 245, 249, 0.5);
-  --sidebar-muted: #94a3b8;
-  --sidebar-card-bg: #ffffff;
-  --sidebar-card-border: rgba(226, 232, 240, 0.6);
+  --sidebar-hover-bg: rgba(241, 245, 249, 0.6);
+  --sidebar-muted: #64748b;
+  --sidebar-card-bg: rgba(255, 255, 255, 0.5);
+  --sidebar-card-border: rgba(226, 232, 240, 0.4);
   --sidebar-logo-filter: none;
   
   color-scheme: light;
@@ -53,18 +53,18 @@
   --gargom-border: #1E294B;
   
   /* Sidebar Variables */
-  --sidebar-bg: rgba(11, 21, 48, 0.85);
+  --sidebar-bg: rgba(11, 21, 48, 0.7);
   --sidebar-text: #e2e8f0;
-  --sidebar-border: rgba(30, 41, 75, 0.8);
-  --sidebar-active-bg: linear-gradient(to right, rgba(56, 189, 248, 0.1), rgba(139, 92, 246, 0.05));
-  --sidebar-active-border: rgba(56, 189, 248, 0.2);
+  --sidebar-border: rgba(30, 41, 75, 0.5);
+  --sidebar-active-bg: linear-gradient(135deg, rgba(56, 189, 248, 0.12) 0%, rgba(139, 92, 246, 0.05) 100%);
+  --sidebar-active-border: rgba(56, 189, 248, 0.25);
   --sidebar-active-line: linear-gradient(to bottom, #38bdf8, #8b5cf6);
   --sidebar-active-text: #38bdf8;
   --sidebar-active-icon: #38bdf8;
-  --sidebar-hover-bg: rgba(255, 255, 255, 0.05);
+  --sidebar-hover-bg: rgba(255, 255, 255, 0.06);
   --sidebar-muted: #64748b;
-  --sidebar-card-bg: #050D24;
-  --sidebar-card-border: rgba(30, 41, 75, 0.6);
+  --sidebar-card-bg: rgba(5, 13, 36, 0.5);
+  --sidebar-card-border: rgba(30, 41, 75, 0.4);
   --sidebar-logo-filter: brightness(0) invert(1) drop-shadow(0 0 8px rgba(56, 189, 248, 0.35));
 }
 

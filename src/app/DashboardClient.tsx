@@ -351,14 +351,14 @@ function StatCard({ title, value, subtitle, icon: Icon, color, delay }: any) {
     >
       <div className={`absolute top-0 right-0 w-24 h-24 bg-gradient-to-br ${gradientClasses} opacity-5 rounded-bl-[80px] transition-transform duration-500 group-hover:scale-150 group-hover:opacity-10`} />
       
-      <div className="flex justify-between items-start relative z-10">
-        <div>
-          <p className="text-sm font-semibold text-slate-500 mb-2">{title}</p>
-          <h3 className="text-3xl font-black tracking-tight text-slate-800">{value}</h3>
+      <div className="flex justify-between items-start relative z-10 gap-3">
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-semibold text-slate-500 mb-2 truncate">{title}</p>
+          <h3 className="text-2xl xl:text-3xl font-black tracking-tight text-slate-800 break-words">{value}</h3>
           {subtitle && <p className="text-xs font-semibold text-slate-400 mt-2">{subtitle}</p>}
         </div>
-        <div className={`p-3.5 rounded-2xl ${bg} ${text} ${border} shadow-sm border`}>
-          <Icon size={24} strokeWidth={2.5} />
+        <div className={`p-2.5 rounded-xl ${bg} ${text} ${border} shadow-sm border shrink-0`}>
+          <Icon size={20} strokeWidth={2.5} />
         </div>
       </div>
     </motion.div>

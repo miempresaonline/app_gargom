@@ -70,7 +70,7 @@ export default function ProveedoresClient({ initialProveedores }: { initialProve
       </div>
 
       {/* Filters & Search */}
-      <div className="flex flex-col md:flex-row gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-100">
+      <div className="flex flex-col md:flex-row gap-4 bg-[var(--sidebar-card-bg)] p-4 rounded-2xl border border-[var(--gargom-border)]">
         <div className="relative flex-1">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
@@ -80,14 +80,14 @@ export default function ProveedoresClient({ initialProveedores }: { initialProve
             placeholder="Buscar por nombre o correo..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gargom-accent/50 shadow-sm"
+            className="w-full pl-10 pr-4 py-3 bg-[var(--gargom-card)] border border-[var(--gargom-border)] text-[var(--gargom-text)] rounded-xl focus:outline-none focus:ring-2 focus:ring-gargom-accent/50 shadow-sm"
           />
         </div>
         <div className="w-full md:w-64 shrink-0">
           <select 
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value)}
-            className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gargom-accent/50 shadow-sm font-medium text-slate-600"
+            className="w-full px-4 py-3 bg-[var(--gargom-card)] border border-[var(--gargom-border)] text-[var(--gargom-text)] rounded-xl focus:outline-none focus:ring-2 focus:ring-gargom-accent/50 shadow-sm font-medium"
           >
             <option value="nombre_asc">Nombre (A-Z)</option>
             <option value="nombre_desc">Nombre (Z-A)</option>
@@ -105,7 +105,7 @@ export default function ProveedoresClient({ initialProveedores }: { initialProve
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9 }}
               transition={{ delay: index * 0.05 }}
-              className="bg-[#fdfbf7] border-l-8 border-gargom-blue shadow-md hover:shadow-xl rounded-r-2xl rounded-l-md p-6 relative overflow-hidden group transition-all"
+              className="bg-[var(--gargom-card)] border-l-8 border-l-gargom-blue border-y border-r border-[var(--gargom-border)] shadow-md hover:shadow-xl rounded-r-2xl rounded-l-md p-6 relative overflow-hidden group transition-all"
             >
               {/* Paper Texture / Watermark */}
               <div className="absolute inset-0 opacity-[0.03] bg-[radial-gradient(#000_1px,transparent_1px)] [background-size:16px_16px] pointer-events-none"></div>
@@ -122,15 +122,15 @@ export default function ProveedoresClient({ initialProveedores }: { initialProve
                     setEditCorreo(proveedor.correo || ''); 
                     setEditCif(proveedor.cif || '');
                     setEditTelefono(proveedor.telefono || '');
-                  }} className="p-2 bg-white text-slate-500 rounded-lg shadow hover:text-gargom-accent transition border border-slate-200">
+                  }} className="p-2 bg-[var(--gargom-card)] text-slate-500 rounded-lg shadow hover:text-gargom-accent transition border border-[var(--gargom-border)]">
                     <Edit2 size={16} />
                   </button>
                 )}
-                <button onClick={() => handleDelete(proveedor.id)} disabled={isDeleting === proveedor.id} className="p-2 bg-white text-slate-500 rounded-lg shadow hover:text-red-500 transition border border-slate-200">
+                <button onClick={() => handleDelete(proveedor.id)} disabled={isDeleting === proveedor.id} className="p-2 bg-[var(--gargom-card)] text-slate-500 rounded-lg shadow hover:text-red-500 transition border border-[var(--gargom-border)]">
                   {isDeleting === proveedor.id ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
                 </button>
               </div>
-
+              
               <div className="flex flex-col h-full relative z-10 space-y-6">
                 <div>
                   <div className="w-12 h-12 rounded-xl bg-gargom-blue/10 text-gargom-blue flex items-center justify-center font-bold text-xl mb-4">
@@ -151,7 +151,7 @@ export default function ProveedoresClient({ initialProveedores }: { initialProve
                 </div>
 
                 <div className="mt-auto space-y-2">
-                  <div className="flex items-center gap-3 text-sm text-slate-600 bg-white p-3 rounded-lg border border-slate-100 shadow-sm">
+                  <div className="flex items-center gap-3 text-sm text-[var(--gargom-text)] bg-[var(--gargom-bg)] p-3 rounded-lg border border-[var(--gargom-border)] shadow-xs">
                     <span className="font-bold text-slate-400 w-16 text-xs uppercase">CIF</span>
                     {editingId === proveedor.id ? (
                       <input 
@@ -166,7 +166,7 @@ export default function ProveedoresClient({ initialProveedores }: { initialProve
                     )}
                   </div>
 
-                  <div className="flex items-center gap-3 text-sm text-slate-600 bg-white p-3 rounded-lg border border-slate-100 shadow-sm">
+                  <div className="flex items-center gap-3 text-sm text-[var(--gargom-text)] bg-[var(--gargom-bg)] p-3 rounded-lg border border-[var(--gargom-border)] shadow-xs">
                     <span className="font-bold text-slate-400 w-16 text-xs uppercase">Tlf</span>
                     {editingId === proveedor.id ? (
                       <input 
@@ -181,7 +181,7 @@ export default function ProveedoresClient({ initialProveedores }: { initialProve
                     )}
                   </div>
 
-                  <div className="flex items-center gap-3 text-sm text-slate-600 bg-white p-3 rounded-lg border border-slate-100 shadow-sm">
+                  <div className="flex items-center gap-3 text-sm text-[var(--gargom-text)] bg-[var(--gargom-bg)] p-3 rounded-lg border border-[var(--gargom-border)] shadow-xs">
                     <Mail size={16} className="text-gargom-accent flex-shrink-0" />
                     {editingId === proveedor.id ? (
                       <input 

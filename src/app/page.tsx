@@ -8,11 +8,35 @@ export default async function Home() {
   const session = await getSession();
 
   // Fetch real data
-  const [obrasCount, trabajadoresCount, certificaciones, gastos, obrasDestacadas] = await Promise.all([
-    prisma.project.count(),
+  const [proyectos, trabajadoresCount, proveedoresCount, certificaciones, gastos, obrasDestacadas] = await Promise.all([
+    prisma.project.findMany({
+      select: {
+        presupuestoTotal: true,
+        presupuestoAdicional: true,
+        estado: true
+      }
+    }),
     prisma.worker.count(),
-    prisma.certification.findMany({ select: { importe: true } }),
-    prisma.expense.findMany({ select: { importe: true, tipo: true, fecha: true } }),
+    prisma.supplier.count(),
+    prisma.certification.findMany({
+      select: {
+        importe: true,
+        createdAt: true
+      }
+    }),
+    prisma.expense.findMany({
+      select: {
+        importe: true,
+        tipo: true,
+        fecha: true,
+        estadoPago: true,
+        supplier: {
+          select: {
+            nombre: true
+          }
+        }
+      }
+    }),
     prisma.project.findMany({
       take: 4, 
       orderBy: { createdAt: 'desc' },
@@ -25,16 +49,42 @@ export default async function Home() {
     })
   ]);
 
+  // Proyectos Activos y Presupuesto en Curso
+  const proyectosActivos = proyectos.filter(p => p.estado === 'ACTIVA');
+  const obrasCount = proyectosActivos.length;
+  const totalPresupuesto = proyectosActivos.reduce((acc, p) => acc + (p.presupuestoTotal || 0) + (p.presupuestoAdicional || 0), 0);
+
+  // Totales financieros
   const totalCertificaciones = certificaciones.reduce((acc, c) => acc + (c.importe || 0), 0);
   const totalGastos = gastos.reduce((acc, g) => acc + (g.importe || 0), 0);
+  const totalGastosPendientes = gastos
+    .filter(g => g.estadoPago === 'Pendiente')
+    .reduce((acc, g) => acc + (g.importe || 0), 0);
   
+  const marginEstimado = totalCertificaciones - totalGastos;
+  const marginPorcentaje = totalCertificaciones > 0 ? (marginEstimado / totalCertificaciones) * 100 : 0;
+
   // Agrupar gastos por tipo
   const gastosPorTipo = gastos.reduce((acc: any, g) => {
     acc[g.tipo] = (acc[g.tipo] || 0) + (g.importe || 0);
     return acc;
   }, {});
 
-  // Agrupar gastos de los ultimos 6 meses para la grafica
+  // Agrupar gastos por proveedor
+  const gastosPorProveedor = gastos.reduce((acc: any, g) => {
+    if (!g.supplier) return acc;
+    const name = g.supplier.nombre;
+    acc[name] = (acc[name] || 0) + (g.importe || 0);
+    return acc;
+  }, {});
+
+  // Top 5 proveedores por gasto
+  const topProveedores = Object.entries(gastosPorProveedor)
+    .map(([name, value]: any) => ({ name, value }))
+    .sort((a, b) => b.value - a.value)
+    .slice(0, 5);
+
+  // Agrupar gastos e certificaciones de los ultimos 6 meses para la grafica mensual
   const monthlyData: any = {};
   const now = new Date();
   for (let i = 5; i >= 0; i--) {
@@ -49,6 +99,15 @@ export default async function Home() {
     const monthName = d.toLocaleString('es-ES', { month: 'short' });
     if (monthlyData[monthName]) {
       monthlyData[monthName].gastos += (g.importe || 0);
+    }
+  });
+
+  certificaciones.forEach(c => {
+    if (!c.createdAt) return;
+    const d = new Date(c.createdAt);
+    const monthName = d.toLocaleString('es-ES', { month: 'short' });
+    if (monthlyData[monthName]) {
+      monthlyData[monthName].certificaciones += (c.importe || 0);
     }
   });
 
@@ -68,11 +127,17 @@ export default async function Home() {
   const dashboardData = {
     obrasCount,
     trabajadoresCount,
+    proveedoresCount,
+    totalPresupuesto,
     totalCertificaciones,
     totalGastos,
+    totalGastosPendientes,
+    marginEstimado,
+    marginPorcentaje,
     gastosPorTipo,
     chartData: Object.values(monthlyData),
-    obrasDestacadas: obrasProcesadas
+    obrasDestacadas: obrasProcesadas,
+    topProveedores
   };
 
   return <DashboardClient session={session} data={dashboardData} />;
